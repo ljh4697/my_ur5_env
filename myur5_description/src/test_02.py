@@ -83,8 +83,7 @@ def create_environment():
 
     ros_cube_pos = env.ros_cube_pos
     ros_table_visual_pos = env.ros_table_visual_pos
-
-    ros_cube_pos[2] -= 0
+    
     ros_table_visual_pos[2] -= 0
 
 
@@ -155,34 +154,35 @@ if __name__ == "__main__":
     goal_reach = False
 
 
-    # while True:
+    while True:
         
         
-    #     while not goal_reach:
-    #         # current_positions = env.robots[0]._joint_positions
-    #         # delta_q[:6] = desired_positions[i]-current_positions
-    #         # action = 2*delta_q.copy()
+        while not goal_reach:
+            # current_positions = env.robots[0]._joint_positions
+            # delta_q[:6] = desired_positions[i]-current_positions
+            # action = 2*delta_q.copy()
 
-    #         #env.robots[0].sim.data.actuator_length[:6] = np.zeros(6)
-    #         env.robots[0].sim.data.qpos[:6] = desired_positions[-1]
-
-
-    #         #obs, reward, done, info = env.step(action)  # take action in the environment
-    #         action = np.zeros(7)
-    #         env.step(action)
-    #         env.render()  # render on display
+            #env.robots[0].sim.data.actuator_length[:6] = np.zeros(6)
+            env.robots[0].sim.data.qpos[:6] = desired_positions[-1]
 
 
+            #obs, reward, done, info = env.step(action)  # take action in the environment
+            action = np.zeros(7)
+            env.step(action)
+            env.render()  # render on display
 
-    #         goal_reach = True
-    #         for e in range(len(delta_q)):
-    #             if np.abs(delta_q[e]) > 0.003:
-    #                 goal_reach = False
-    #                 break
-    #         print(env.robots[0]._hand_pos)
 
-    #     goal_reach = False
 
-    #     if i < len(desired_positions)-1:
-    #         i+=1
-    #     #print(i)
+            goal_reach = True
+            for e in range(len(delta_q)):
+                if np.abs(delta_q[e]) > 0.003:
+                    goal_reach = False
+                    break
+            #print(env.robots[0]._hand_pos)
+
+
+        goal_reach = False
+
+        if i < len(desired_positions)-1:
+            i+=1
+        #print(i)
