@@ -226,6 +226,7 @@ if __name__ == "__main__":
         
         i = 0
         delta_q = np.zeros(7)
+        last_action = np.zeros(7)
         goal_reach = False
         terminate = False
         env.viewer.set_camera(camera_id=0)
@@ -245,21 +246,26 @@ if __name__ == "__main__":
                     env.step(action)
                     env.render()  # render on display
 
+
         else:
+            
             while not terminate:
                 
                 
                 s = 1
                 
                 while not goal_reach:
+                    
                     current_positions = env.robots[0]._joint_positions
                     delta_q[:6] = desired_positions[i]-current_positions
+                    
+                    
                     action = delta_q.copy()
                     action *= (s/100)
-                        
-                    #check joint position
-                    #env.robots[0].sim.data.qpos[:6] = desired_positions[i]
-
+                    
+                    if s <= 100:
+                        last_action*=0.99
+                        action += last_action
 
                     #obs, reward, done, info = env.step(action)  # take action in the environment
                     env.step(action)
@@ -268,21 +274,21 @@ if __name__ == "__main__":
 
 
                     goal_reach = True
-                    print(delta_q, 'step', i, 's = ', action.sum(), s)
+                    #print(delta_q, 'step', i, 's = ', action.sum(), s)
                     if i < len(desired_positions)-1:
                         for e in range(len(delta_q)):
-                            if np.abs(delta_q[e]) > 0.01:
+                            if np.abs(delta_q[e]) > 0.04:
                                 goal_reach = False
                                 break
                     else:
-                        print("end")
                         for e in range(len(delta_q)):
                             if np.abs(delta_q[e]) > 0.003:
                                 goal_reach = False
                                 break
-                        
-                    s += 4
-                    #print(env.robots[0]._hand_pos)
+                            
+                    if goal_reach == True:
+                        last_action = action.copy()
+                    s += 3
 
 
                 goal_reach = False
