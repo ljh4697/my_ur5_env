@@ -165,7 +165,7 @@ if __name__ == "__main__":
 
         elif separated_task == 2: # cartesian path
             gripper_state = ""
-            pose_goal.position.z -= 0.21
+            pose_goal.position.z -= 0.18
             r_last_position, plan=planning_ur5e.plan_cartesian_path(wpose=pose_goal)
         
         elif separated_task == 3: # grasp and attach box to gripper
@@ -179,7 +179,7 @@ if __name__ == "__main__":
             gripper_state = ""
             planning_scene_1.r_open_gripper()
             planning_scene_1._update_planning_scene(planning_scene_1.get_planning_scene)
-            pose_goal.position.z += 0.21
+            pose_goal.position.z += 0.18
             r_last_position, plan=planning_ur5e.plan_cartesian_path(wpose=pose_goal)
         
         elif separated_task == 5: #  approach place position
@@ -192,7 +192,7 @@ if __name__ == "__main__":
             gripper_state = ""
             planning_scene_1.set_joint_state_to_neutral_pose(neutral_pose=r_last_position)
             planning_scene_1._update_planning_scene(planning_scene_1.get_planning_scene)
-            pose_goal.position.z -= 0.21
+            pose_goal.position.z -= 0.18
             r_last_position, plan=planning_ur5e.plan_cartesian_path(wpose=pose_goal)
             place_pose = copy_pose(pose_goal)
         
@@ -205,7 +205,7 @@ if __name__ == "__main__":
         
         elif separated_task == 8: # to retreat
             gripper_state = ""
-            pose_goal.position.z += 0.21
+            pose_goal.position.z += 0.18
             r_last_position, plan=planning_ur5e.plan_cartesian_path(wpose=pose_goal)
         
         elif separated_task == 9: # set current pose to neutral pose
@@ -263,7 +263,7 @@ if __name__ == "__main__":
                     action = delta_q.copy()
                     action *= (s/100)
                     
-                    if s <= 100:
+                    if s <= 120:
                         last_action*=0.99
                         action += last_action
 
@@ -277,7 +277,7 @@ if __name__ == "__main__":
                     #print(delta_q, 'step', i, 's = ', action.sum(), s)
                     if i < len(desired_positions)-1:
                         for e in range(len(delta_q)):
-                            if np.abs(delta_q[e]) > 0.04:
+                            if np.abs(delta_q[e]) > 0.06:
                                 goal_reach = False
                                 break
                     else:
@@ -288,7 +288,8 @@ if __name__ == "__main__":
                             
                     if goal_reach == True:
                         last_action = action.copy()
-                    s += 3
+                        
+                    s += 6
 
 
                 goal_reach = False
