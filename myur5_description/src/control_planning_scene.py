@@ -67,11 +67,11 @@ class control_planning_scene(object):
         get_ps_srv.wait_for_service(0.5)
         return get_ps_srv.call(get_req_)
 
-    def _make_mesh(self, name, pose, mesh_path, size=(1, 1, 1)):
+    def _make_mesh(self, name, mesh_path, pos, quat=(0, 0, 0, 0), size=(1, 1, 1), header="world"):
         co = CollisionObject()
         co.operation = CollisionObject.ADD
         co.id = name
-        co.header = pose.header
+        co.header.frame_id = header
 
         #make mesh
         mesh = trimesh.load(mesh_path, force='mesh')
@@ -89,8 +89,19 @@ class control_planning_scene(object):
             point.z = vertex[2] * size[2]
             mesh_01.vertices.append(point)
         
+        object_pose = geometry_msgs.msg.Pose()
+
+        object_pose.position.x = pos[0]
+        object_pose.position.y = pos[1]
+        object_pose.position.z = pos[2]
+        object_pose.orientation.x = quat[0]
+        object_pose.orientation.y = quat[1]
+        object_pose.orientation.z = quat[2]
+        object_pose.orientation.w = quat[3]
+        
+        
         co.meshes = [mesh_01]
-        co.mesh_poses = [pose.pose]
+        co.mesh_poses = [object_pose]
 
         self.get_planning_scene.world.collision_objects.append(co)
 

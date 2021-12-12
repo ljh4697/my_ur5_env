@@ -70,7 +70,7 @@ def create_environment():
         use_camera_obs=False,
     )
 
-    # reset the environment
+    # reset the environmentplanning_scene_1
     env.reset()
 
 
