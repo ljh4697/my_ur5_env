@@ -43,10 +43,12 @@ import ur5e_plan
 
 
 
+
+
 def copy_pose(pose:geometry_msgs.msg.Pose()):
     copied_pose = geometry_msgs.msg.Pose()
 
-    copied_pose.position.x = pose.position.x
+    copied_pose.position.x = pose.position.x+0.15
     copied_pose.position.y = pose.position.y
     copied_pose.position.z = pose.position.z
 
@@ -123,24 +125,23 @@ if __name__ == "__main__":
 
     planning_scene_1 = control_planning_scene.control_planning_scene()
     planning_ur5e = ur5e_plan.ur5e_plan()
+    
 
     box_position, obejct_01, neutral_position = create_environment()
 
 
 
-    box_position[2]+=0.25
-    print(type(box_position))
+    box_position[0]-=0.25
 
     place_position = box_position.copy()
-    place_position[0] += 0.1 ; place_position[1] += 0.2
+    place_position[0] += 0.2 ; place_position[1] += 0.2 ; place_position[2] += 0.1
     
 
 
+    r_last_position, pose_goal, plan = planning_ur5e.pose_plan_path(object_pose=box_position, approach_direction="horizon")
 
-    r_last_position, pose_goal, plan = planning_ur5e.pose_plan_path(object_pose=box_position, approach_direction="vertical")
-
-    print(plan)
-    print(type(box_position))
+    # print(plan)
+    # print(type(box_position))
 
     input("press \"enter\" to open gripper")
 
@@ -150,8 +151,8 @@ if __name__ == "__main__":
 
     input("press \"enter\" to cartesian path")
 
-    pose_goal.position.z -= 0.105
-    print(pose_goal.position)
+    pose_goal.position.x += 0.10
+
     r_last_position, plan=planning_ur5e.plan_cartesian_path(wpose=pose_goal)
 
     #print(plan)
@@ -167,7 +168,8 @@ if __name__ == "__main__":
 
     planning_scene_1.r_open_gripper()
     planning_scene_1._update_planning_scene(planning_scene_1.get_planning_scene)
-    pose_goal.position.z += 0.105
+    pose_goal.position.z += 0.1
+    
     r_last_position, plan=planning_ur5e.plan_cartesian_path(wpose=pose_goal)
 
 
@@ -176,13 +178,13 @@ if __name__ == "__main__":
 
     planning_scene_1.set_joint_state_to_neutral_pose(neutral_pose=r_last_position)
     planning_scene_1._update_planning_scene(planning_scene_1.get_planning_scene)
-    r_last_position, pose_goal, plan = planning_ur5e.pose_plan_path(object_pose=place_position, approach_direction="vertical")
+    r_last_position, pose_goal, plan = planning_ur5e.pose_plan_path(object_pose=place_position, approach_direction="horizon")
 
     input("press \"enter\" to cartesian path")
 
     planning_scene_1.set_joint_state_to_neutral_pose(neutral_pose=r_last_position)
     planning_scene_1._update_planning_scene(planning_scene_1.get_planning_scene)
-    pose_goal.position.z -= 0.105
+    pose_goal.position.z -= 0.1
 
     r_last_position, plan=planning_ur5e.plan_cartesian_path(wpose=pose_goal)
 
@@ -199,7 +201,7 @@ if __name__ == "__main__":
 
     input("press \"enter\" to retreat")
 
-    pose_goal.position.z += 0.105
+    pose_goal.position.x -= 0.1
     r_last_position, plan=planning_ur5e.plan_cartesian_path(wpose=pose_goal)
 
     input("pree \"enter\" to plan to neutral pose")

@@ -35,7 +35,7 @@ class ur5e_plan(object):
         #rospy.init_node("baxter_plan", anonymous=False)
 
         self.robot = RobotCommander()
-    def pose_plan_path(self, object_pose, object_orientation=(0, pi, 0), arm ="manipulator"):
+    def pose_plan_path(self, object_pose, object_orientation=(0, pi, 0), arm ="manipulator" ,approach_direction="vertical"):
         
 
 
@@ -62,7 +62,14 @@ class ur5e_plan(object):
         pose_goal = geometry_msgs.msg.Pose()
         arm_move_group.set_goal_position_tolerance(0.0001)
 
-        q = quaternion_from_euler(pi, pi/2, -pi/2)
+        if approach_direction == "horizon":
+            q = quaternion_from_euler(pi/2, 0, 0,) # horizon direction approach
+        elif approach_direction == "vertical":
+            q = quaternion_from_euler(pi, pi/2, -pi/2) # vertical direction approach
+        else:
+            q = quaternion_from_euler(pi/2, 0, 0+approach_direction)
+            
+        
 
 
         pose_goal.orientation.x = q[0]
@@ -148,7 +155,8 @@ class ur5e_plan(object):
         #wpose = arm_move_group.get_current_pose().pose
         #wpose.position.z -= scale * 0.05  # First move up (z)
 
-        waypoints.append(copy.deepcopy(wpose))
+        #waypoints.append(copy.deepcopy(wpose))
+        waypoints.append(wpose)
 
         # We want the Cartesian path to be interpolated at a resolution of 1 cm
         # which is why we will specify 0.01 as the eef_step in Cartesian

@@ -43,6 +43,8 @@ import ur5e_plan
 
 
 
+
+
 def copy_pose(pose:geometry_msgs.msg.Pose()):
     copied_pose = geometry_msgs.msg.Pose()
 
@@ -54,46 +56,6 @@ def copy_pose(pose:geometry_msgs.msg.Pose()):
 
     return copied_pose
 
-def set_approach_position(v, mesh_pose):
-    v= (v/np.linalg.norm(v))*0.25
-    approach_position = np.zeros(3)
-    approach_position = mesh_pose - v
-    
-    return approach_position
-
-
-def direction_distance(v):
-    v= (v/np.linalg.norm(v))*0.1
-    
-    return v
-
-def cross_product(x, y):
-    z = np.zeros(3)
-    z[0] = x[1]*y[2]-x[2]*y[1]
-    z[1] = x[2]*y[0]-x[0]*y[2]
-    z[2] = x[0]*y[1]-x[1]*y[0]
-    
-
-    return z
-
-
-
-def revolute_degree(y):
-    x = np.array([1, 0, 0])
-    z = np.zeros(3)
-    z[0] = x[1]*y[2]-x[2]*y[1]
-    z[1] = x[2]*y[0]-x[0]*y[2]
-    z[2] = x[0]*y[1]-x[1]*y[0]
-    
-
-
-    rd = np.arcsin(np.linalg.norm(z)/(np.linalg.norm(x)*np.linalg.norm(y)))*np.sign(z[2])
-
-    print(rd)
-    if rd > 0.8:
-        rd = -rd
-    return rd
-
 
 
 def create_environment():
@@ -101,89 +63,26 @@ def create_environment():
     config = load_controller_config(default_controller="JOINT_POSITION")
     # create environment instance
     env = suite.make(
-        env_name="ur5e_pickandplace", # try with other tasks like "Stack" and "Door"
+        env_name="ur5e_demo", # try with other tasks like "Stack" and "Door"
         robots="UR5e",  # try with other robots like "Sawyer" and "Jaco"
         controller_configs=config,
         has_renderer=True,
-        render_camera=None,
         has_offscreen_renderer=False,
         use_camera_obs=False,
     )
-    
+
+    # reset the environmentplanning_scene_1
     env.reset()
+
+
+    object_size = (env.ros_cube_size[0]*2, env.ros_cube_size[1]*2, env.ros_cube_size[2]*2)
     
-
-
-
-    for i in range(5):
-
-        action=np.zeros(7)
-        env.step(action)
-        env.render()  # render on display
-
-    
-
-
-
-        
-    meshes_path = {}
-    
-    for name in env.obj_names:
-        meshes_path[name] = "/home/joonhyeok/robosuite/robosuite/models/assets/objects/meshes/"+ name +".stl"
-        
-
-    meshload = {}
-    approach_direction = {}
-    grasp_point = {}
-    
-    ros_objects_pos = env.ros_objects_pos
-    
-    # find grasp point
-    for m in meshes_path.keys():
-        meshload[m]= trimesh.load(meshes_path[m], force='mesh')
-        mesh_center_mass = meshload[m].center_mass
-        dot0_face_z = np.where(np.dot(meshload[m].face_normals[:],np.array([0, 0, 1]))==0)[0]
-
-        num_faces = len(dot0_face_z)
-        weights = np.zeros(len(meshload[m].faces))
-        weights[dot0_face_z] = 1/num_faces
-
-        samples, face_idx = meshload[m].sample(100, return_index = True, face_weight = weights)
-        sample_opposite_normals = np.zeros_like(samples)
-        sample_opposite_normals = -meshload[m].face_normals[face_idx, :]
-
-        mesh_centeres = np.ones_like(samples)*mesh_center_mass
-        
-        
-        distances = np.linalg.norm(mesh_center_mass-samples, axis=1)
-        
-        
-        cloeset_point = samples[np.argmin(distances)]
-        normal_vector = sample_opposite_normals[np.argmin(distances)]
-
-        location, idx, f = meshload[m].ray.intersects_location(ray_origins=np.array([cloeset_point]), ray_directions=np.array([normal_vector]))
-        approach_direction[m]= cross_product(location[1]-location[0], [0, 0, 1])
-        grasp_point[m] = ros_objects_pos[m] - [0, 0, 0.005]
-        
-
-
-
-
-    #enter env information
-    
-    #object_size = (env.ros_cube_size[0]*2, env.ros_cube_size[1]*2, env.ros_cube_size[2]*2)
-
     table_visual_size = (env.ros_table_visual_size[0]*2 , env.ros_table_visual_size[1]*2, env.ros_table_visual_size[2]*2)
 
     table_legs_size = (env.ros_table_legs_size[1]*2 ,env.ros_table_legs_size[0])
     table_legs_pos = env.ros_table_legs_pos
 
-    #ros_cube_pos = env.ros_cube_pos
-    
-    ros_objects_quaternion = env.ros_objects_quaternion
-    objects_co = {}
-    
-    
+    ros_cube_pos = env.ros_cube_pos
     ros_table_visual_pos = env.ros_table_visual_pos
     
     ros_table_visual_pos[2] -= 0
@@ -194,11 +93,8 @@ def create_environment():
         
         
     # add box
-    #obejct_01 = planning_scene_1._make_box(name="object", pos=ros_cube_pos, quat=env.ros_cube_quaternion, size = object_size)
+    obejct_01 = planning_scene_1._make_box(name="object", pos=ros_cube_pos, quat=env.ros_cube_quaternion, size = object_size)
     # add table (top)
-    for i, n in enumerate(env.obj_names):
-        objects_co[n] = planning_scene_1._make_mesh(name =n, mesh_path=meshes_path[n], pos=ros_objects_pos[n] ,quat=ros_objects_quaternion[n])
-        
     planning_scene_1._make_box(name="table_visual", pos=ros_table_visual_pos, size = table_visual_size)
     # add table legs
     for i in range(4):
@@ -223,7 +119,7 @@ def create_environment():
     #     env.render()  # render on display
 
 
-    return env, grasp_point, approach_direction, objects_co, joint_positions
+    return env, ros_cube_pos, obejct_01, joint_positions
 
 
 if __name__ == "__main__":
@@ -237,15 +133,17 @@ if __name__ == "__main__":
     planning_scene_1 = control_planning_scene.control_planning_scene()
     planning_ur5e = ur5e_plan.ur5e_plan()
 
-    env, grasp_point, approach_direction, objects_co, neutral_position = create_environment()
+    env, box_position, obejct_01, neutral_position = create_environment()
 
 
+
+    goal = box_position.copy()
+    goal[0]-=0.25
     
-        
-    grasp_point['milk'] = set_approach_position(approach_direction['milk'], grasp_point['milk'])
-
-    place_position = grasp_point['milk'].copy()
+    
+    place_position = goal.copy()
     place_position[0] += 0.2 ; place_position[1] += 0.2 ; place_position[2] += 0.1
+
 
     separated_task = 0
 
@@ -256,8 +154,7 @@ if __name__ == "__main__":
     
     while True:
         if separated_task == 0: # approach
-            r_last_position, pose_goal, plan = planning_ur5e.pose_plan_path(object_pose=grasp_point['milk'], approach_direction=revolute_degree(approach_direction['milk']))
-            
+            r_last_position, pose_goal, plan = planning_ur5e.pose_plan_path(object_pose=goal , approach_direction="horizon")
         elif separated_task == 1: # open gripper
             
             planning_scene_1.set_joint_state_to_neutral_pose(neutral_pose=r_last_position)
@@ -267,17 +164,14 @@ if __name__ == "__main__":
 
         elif separated_task == 2: # cartesian path
             gripper_state = ""
-            v = direction_distance(approach_direction['milk'])
-            pose_goal.position.x += v[0]
-            pose_goal.position.y += v[1]
-            pose_goal.position.z += v[2]
+            pose_goal.position.x += 0.1
             r_last_position, plan=planning_ur5e.plan_cartesian_path(wpose=pose_goal)
             
         elif separated_task == 3: # grasp and attach box to gripper
             planning_scene_1.set_joint_state_to_neutral_pose(neutral_pose=r_last_position)
             planning_scene_1.r_close_gripper()
             gripper_state = "CLOSE"
-            planning_scene_1.attach_object(objects_co['milk'])
+            planning_scene_1.attach_object(obejct_01)
             planning_scene_1._update_planning_scene(planning_scene_1.get_planning_scene)
             
         elif separated_task == 4: # retreat   
@@ -304,8 +198,8 @@ if __name__ == "__main__":
         elif separated_task == 7: # detach object"
             gripper_state = "OPEN"
             planning_scene_1.set_joint_state_to_neutral_pose(neutral_pose=r_last_position)
-            objects_co['milk'].mesh_poses[0] = place_pose
-            planning_scene_1.detach_object(objects_co['milk'])
+            obejct_01.primitive_poses[0] = place_pose
+            planning_scene_1.detach_object(obejct_01)
             planning_scene_1._update_planning_scene(planning_scene_1.get_planning_scene)
         
         elif separated_task == 8: # to retreat
