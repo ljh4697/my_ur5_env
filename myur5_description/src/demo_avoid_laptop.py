@@ -262,7 +262,7 @@ if __name__ == "__main__":
     grasp_point['milk'] = set_approach_position(approach_direction['milk'], grasp_point['milk'])
 
     place_position = grasp_point['milk'].copy()
-    place_position[0] += 0.2 ; place_position[1] += 0.2 ; place_position[2] += 0.1
+    place_position[0] += 0.00 ; place_position[1] += 0.65 ; place_position[2] += 0.1
 
     separated_task = 0
 

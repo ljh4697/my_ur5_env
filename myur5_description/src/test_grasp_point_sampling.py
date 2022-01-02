@@ -16,8 +16,8 @@ sample 된 두 point를 있는 vector 와 0,0,1 과 cross_product 하여 normal 
 
 future work:
 
-    x 축으로 gripper가 들어갈 것이기 때문에 그 것을 고려하여 face 를 reject 하여 sampling 하자 (approach direction과 평행한 face)
-    (좋은 방법이 아님)
+    
+    
     
     kinematic world 에서 pick and place 하는 것 까지 성공, dynamic world 에서 실험해보자
     
@@ -90,11 +90,27 @@ sample_opposite_normals = -mesh.face_normals[face_idx, :]
 # find the closest sample with center mass
 mesh_centeres = np.ones_like(samples)*mesh_center_mass
 distances = np.linalg.norm(mesh_center_mass-samples, axis=1)
-cloeset_point = samples[np.argmin(distances)]
-normal_vector = sample_opposite_normals[np.argmin(distances)]
-# find rayed point
-#location, idx, f = mesh.ray.intersects_location(ray_origins=samples, ray_directions=sample_opposite_normals)
-location, idx, f = mesh.ray.intersects_location(ray_origins=np.array([cloeset_point]), ray_directions=np.array([normal_vector]))
+
+sorted_distances = np.sort(distances)
+
+FIND_GRASP_POINTS = False
+iter = 0
+while not FIND_GRASP_POINTS: 
+    cloeset_point = samples[np.where(distances[:] == sorted_distances[iter])]
+    normal_vector = sample_opposite_normals[np.where(distances[:] == sorted_distances[iter])]
+
+    # find rayed point
+    #location, idx, f = mesh.ray.intersects_location(ray_origins=samples, ray_directions=sample_opposite_normals)
+    location, idx, f = mesh.ray.intersects_location(ray_origins=np.array(cloeset_point), ray_directions=np.array(normal_vector))
+
+
+    if len(idx) == 2 and round(np.dot(mesh.face_normals[f][0, :], mesh.face_normals[f][1, :]),3) == -1:
+        FIND_GRASP_POINTS = True
+    else:
+        iter += 1
+        
+        
+    
 
 
 approach_direction, _= cross_product(location[1]-location[0], [0, 0, 1])

@@ -65,7 +65,6 @@ def set_approach_position(v, mesh_pose):
 
 def direction_distance(v):
     v= (v/np.linalg.norm(v))*0.1
-    
     return v
 
 def cross_product(x, y):
@@ -140,7 +139,8 @@ def create_environment():
     ros_objects_pos = env.ros_objects_pos
     
     # find grasp point
-    for m in meshes_path.keys():
+    for obj in env.objects:
+        m = obj.name
         meshload[m]= trimesh.load(meshes_path[m], force='mesh')
         mesh_center_mass = meshload[m].center_mass
         dot0_face_z = np.where(np.dot(meshload[m].face_normals[:],np.array([0, 0, 1]))==0)[0]
@@ -157,12 +157,24 @@ def create_environment():
         
         
         distances = np.linalg.norm(mesh_center_mass-samples, axis=1)
-        
-        
-        cloeset_point = samples[np.argmin(distances)]
-        normal_vector = sample_opposite_normals[np.argmin(distances)]
+        sorted_distances = np.sort(distances)
 
-        location, idx, f = meshload[m].ray.intersects_location(ray_origins=np.array([cloeset_point]), ray_directions=np.array([normal_vector]))
+        
+        FIND_GRASP_POINTS = False
+        iter = 0
+        while not FIND_GRASP_POINTS: 
+            cloeset_point = samples[np.where(distances[:] == sorted_distances[iter])]
+            normal_vector = sample_opposite_normals[np.where(distances[:] == sorted_distances[iter])]
+
+            # find rayed point
+            #location, idx, f = mesh.ray.intersects_location(ray_origins=samples, ray_directions=sample_opposite_normals)
+            location, idx, f = meshload[m].ray.intersects_location(ray_origins=np.array(cloeset_point), ray_directions=np.array(normal_vector))
+
+
+            if len(idx) == 2 and round(np.dot(meshload[m].face_normals[f][0, :], meshload[m].face_normals[f][1, :]),3) == -1:
+                FIND_GRASP_POINTS = True
+            else:
+                iter += 1
         approach_direction[m]= cross_product(location[1]-location[0], [0, 0, 1])
         grasp_point[m] = ros_objects_pos[m] - [0, 0, 0.0003]
         
@@ -230,9 +242,14 @@ def create_environment():
     # add box
     #obejct_01 = planning_scene_1._make_box(name="object", pos=ros_cube_pos, quat=env.ros_cube_quaternion, size = object_size)
     # add table (top)
+    
+    
     for i, n in enumerate(env.obj_names):
-        objects_co[n] = planning_scene_1._make_mesh(name =n, mesh_path=meshes_path[n], pos=ros_objects_pos[n] ,quat=ros_objects_quaternion[n])
-        
+        if n == "milk":
+            objects_co[n] = planning_scene_1._make_mesh(name =n, mesh_path=meshes_path[n], pos=ros_objects_pos[n] ,quat=ros_objects_quaternion[n], size=(0.9, 0.9, 0.9))
+        elif n == "laptop":
+            objects_co[n] = planning_scene_1._make_mesh(name =n, mesh_path=meshes_path[n], pos=ros_objects_pos[n] ,quat=ros_objects_quaternion[n], size=(0.08, 0.08, 0.08))
+            
     planning_scene_1._make_box(name="table_visual", pos=ros_table_visual_pos, size = table_visual_size)
     # add table legs
     for i in range(4):
@@ -282,14 +299,14 @@ if __name__ == "__main__":
     
     direction_vector = np.array([1, -1, 0])
         
-    grasp_point['bottle'] = set_approach_position(approach_direction['bottle'], grasp_point['bottle'])
+    grasp_point['milk'] = set_approach_position(approach_direction['milk'], grasp_point['milk'])
 
-    place_position = grasp_point['bottle'].copy()
-    place_position[0] += 0.2 ; place_position[1] += 0.2 ; place_position[2] += 0.1
+    place_position = grasp_point['milk'].copy()
+    place_position[0] += 0.00 ; place_position[1] += 0.65 ; place_position[2] += 0.1
     
-    revolute_degree(approach_direction['bottle'])
+    revolute_degree(approach_direction['milk'])
 
-    r_last_position, pose_goal, plan = planning_ur5e.pose_plan_path(object_pose=grasp_point['bottle'], approach_direction=revolute_degree(approach_direction['bottle']))
+    r_last_position, pose_goal, plan = planning_ur5e.pose_plan_path(object_pose=grasp_point['milk'], approach_direction=revolute_degree(approach_direction['milk']))
 
     # print(plan)
     # print(type(box_position))
@@ -303,7 +320,7 @@ if __name__ == "__main__":
     input("press \"enter\" to cartesian path")
 
 
-    v = direction_distance(approach_direction['bottle'])
+    v = direction_distance(approach_direction['milk'])
     pose_goal.position.x += v[0]
     pose_goal.position.y += v[1]
     pose_goal.position.z += v[2]
@@ -317,7 +334,7 @@ if __name__ == "__main__":
     
     planning_scene_1.set_joint_state_to_neutral_pose(neutral_pose=r_last_position)
     planning_scene_1.r_close_gripper()
-    planning_scene_1.attach_object(objects_co['bottle'])
+    planning_scene_1.attach_object(objects_co['milk'])
     planning_scene_1._update_planning_scene(planning_scene_1.get_planning_scene)
 
     input("press \"enter\" to retreat")
@@ -351,8 +368,8 @@ if __name__ == "__main__":
 
 
     planning_scene_1.set_joint_state_to_neutral_pose(neutral_pose=r_last_position)
-    objects_co['bottle'].mesh_poses[0] = place_pose
-    planning_scene_1.detach_object(objects_co['bottle'])
+    objects_co['milk'].mesh_poses[0] = place_pose
+    planning_scene_1.detach_object(objects_co['milk'])
     planning_scene_1._update_planning_scene(planning_scene_1.get_planning_scene)
 
     input("press \"enter\" to retreat")
