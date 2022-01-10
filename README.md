@@ -24,13 +24,10 @@ roslaunch following
  
  ## my_ur5_env ropository config
  - my_ur5_moveit_config
- 
    ur5 moveit config
  - myur5_description
- 
    ur5 scripts (planning, control)
  - ur5_2
- 
    ur5's meshes, urdf files
    
  
