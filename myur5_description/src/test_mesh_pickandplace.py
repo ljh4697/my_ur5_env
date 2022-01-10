@@ -41,7 +41,19 @@ import control_planning_scene
 import ur5e_plan
 from ur5e_dynamic_world import dynamic_world
 
+'''
+2022 01 10
 
+
+수정해야할 오류 사항
+
+    approach direction 에 따라서 object pose 에 비한 end effector posde 의 차이 때문에 place position 이 달라진다
+    waypoint 를 더 많이 생성 (V)
+    table size 줄이고 obejct pose 를 table 가장자리에 위치 (V)
+    
+laptop 위의 waypoint를 trajectory에 추가(중간에 지나갈 수 있도록)하여 다양한 path 를 planning (waypoint 를 laptop 위에 정해진 정육면체 공간 안에 waypoint를 지나가게 하도록 해보자)
+
+'''
 
 
 def copy_pose(pose:geometry_msgs.msg.Pose()):
@@ -84,9 +96,6 @@ def revolute_degree(y):
     z[0] = x[1]*y[2]-x[2]*y[1]
     z[1] = x[2]*y[0]-x[0]*y[2]
     z[2] = x[0]*y[1]-x[1]*y[0]
-    
-
-    print(np.linalg.norm(z)/(np.linalg.norm(x)*np.linalg.norm(y)))
 
     rd = np.arcsin(np.linalg.norm(z)/(np.linalg.norm(x)*np.linalg.norm(y)))*np.sign(z[2])
 
@@ -278,7 +287,8 @@ def create_environment():
 
 
 
-
+def main():
+    pass
 
 
 if __name__ == "__main__":
@@ -302,7 +312,7 @@ if __name__ == "__main__":
     grasp_point['milk'] = set_approach_position(approach_direction['milk'], grasp_point['milk'])
 
     place_position = grasp_point['milk'].copy()
-    place_position[0] += 0.00 ; place_position[1] += 0.65 ; place_position[2] += 0.1
+    place_position[0] += 0.05 ; place_position[1] += 0.80 ; place_position[2] += 0.1
     
     revolute_degree(approach_direction['milk'])
 
