@@ -154,7 +154,7 @@ def create_environment():
         sample_opposite_normals = -meshload[m].face_normals[face_idx, :]
 
         #mesh_centeres = np.ones_like(samples)*mesh_center_mass
-        
+        ##
         
         distances = np.linalg.norm(mesh_center_mass-samples, axis=1)
         sorted_distances = np.sort(distances)

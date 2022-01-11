@@ -105,7 +105,7 @@ def revolute_degree(y):
 
 
 
-def create_environment():
+def create_environment(planning_scene_1):
     
     config = load_controller_config(default_controller="JOINT_POSITION")
     # create environment instance
@@ -303,7 +303,7 @@ if __name__ == "__main__":
     planning_ur5e = ur5e_plan.ur5e_plan()
 
     #env, box_position, obejct_01, neutral_position = 
-    env, grasp_point, approach_direction, objects_co, neutral_position = create_environment()
+    env, grasp_point, approach_direction, objects_co, neutral_position = create_environment(planning_scene_1)
 
 
     approach_position ={}
