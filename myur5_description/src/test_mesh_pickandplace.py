@@ -306,17 +306,16 @@ if __name__ == "__main__":
     env, grasp_point, approach_direction, objects_co, neutral_position = create_environment()
 
 
-    
-    direction_vector = np.array([1, -1, 0])
+    approach_position ={}
         
-    grasp_point['milk'] = set_approach_position(approach_direction['milk'], grasp_point['milk'])
+    approach_position['milk'] = set_approach_position(approach_direction['milk'], grasp_point['milk'])
 
     place_position = grasp_point['milk'].copy()
-    place_position[0] += 0.05 ; place_position[1] += 0.80 ; place_position[2] += 0.1
+    place_position[0] += 0.05 ; place_position[1] += 1.0 ; place_position[2] += 0.1
     
     revolute_degree(approach_direction['milk'])
 
-    r_last_position, pose_goal, plan = planning_ur5e.pose_plan_path(object_pose=grasp_point['milk'], approach_direction=revolute_degree(approach_direction['milk']))
+    r_last_position, pose_goal, plan = planning_ur5e.pose_plan_path(object_pose=approach_position['milk'], approach_direction=revolute_degree(approach_direction['milk']))
 
     # print(plan)
     # print(type(box_position))

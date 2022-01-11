@@ -258,11 +258,12 @@ if __name__ == "__main__":
 
 
     
+    approach_position ={}
         
-    grasp_point['milk'] = set_approach_position(approach_direction['milk'], grasp_point['milk'])
+    approach_position['milk'] = set_approach_position(approach_direction['milk'], grasp_point['milk'])
 
     place_position = grasp_point['milk'].copy()
-    place_position[0] += 0.00 ; place_position[1] += 0.65 ; place_position[2] += 0.1
+    place_position[0] += 0.05 ; place_position[1] += 1.0 ; place_position[2] += 0.1
 
     separated_task = 0
 
@@ -273,7 +274,7 @@ if __name__ == "__main__":
     
     while True:
         if separated_task == 0: # approach
-            r_last_position, pose_goal, plan = planning_ur5e.pose_plan_path(object_pose=grasp_point['milk'], approach_direction=revolute_degree(approach_direction['milk']))
+            r_last_position, pose_goal, plan = planning_ur5e.pose_plan_path(object_pose=approach_position['milk'], approach_direction=revolute_degree(approach_direction['milk']))
             
         elif separated_task == 1: # open gripper
             
