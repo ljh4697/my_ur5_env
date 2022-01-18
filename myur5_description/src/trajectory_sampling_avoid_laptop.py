@@ -59,6 +59,7 @@ unpredictable, unlegible 한 모션이 많이 planning 됨 (가끔은 최단경�
 
 def main():
     
+    grasp_trajectory = list()
     planning_trajectory = list()
     
     rospy.init_node("tutorial_ur5e", anonymous=True)
@@ -79,15 +80,21 @@ def main():
     midpoint = grasp_point['milk'].copy()
     place_position = grasp_point['milk'].copy()
     
-    # x 0.03~0.17 y = 0.35~0.7 , z 0.03
-    #midpoint[0] += 0.03 ; midpoint[1] += 0.6 ; midpoint[2] += 0.15
-    midpoint[0] += 0.1 ; midpoint[1] += 0.5 ; midpoint[2] += 0.03
+    # x 0.03~0.17 y = 0.35~0.7 , z = 0.03~0.75 suitable distance
+    # define mid point (point to pass)
+    midpoint[0] += np.random.uniform(0.03, 0.17) ; midpoint[1] += np.random.uniform(0.35, 0.7) ; midpoint[2] += np.random.uniform(0.03, 0.75)
     
     place_position[0] += 0.05 ; place_position[1] += 1.0 ; place_position[2] += 0.1
     
     revolute_degree(approach_direction['milk'])
 
+
+
+
+    #start planning
     r_last_position, pose_goal, plan = planning_ur5e.pose_plan_path(object_pose=approach_position['milk'], approach_direction=revolute_degree(approach_direction['milk']))
+    
+    #print(plan)
     #input("press \"enter\" to open gripper")
 
     planning_scene_1.set_joint_state_to_neutral_pose(neutral_pose=r_last_position)
@@ -123,10 +130,14 @@ def main():
     r_last_position, plan=planning_ur5e.plan_cartesian_path(wpose=pose_goal)
 
     #input("press \"enter\" to approach midpoint position")
-
     planning_scene_1.set_joint_state_to_neutral_pose(neutral_pose=r_last_position)
     planning_scene_1._update_planning_scene(planning_scene_1.get_planning_scene)
-    r_last_position, pose_goal, plan = planning_ur5e.pose_plan_path(object_pose=midpoint, approach_direction="horizon")
+    while True:
+        r_last_position, pose_goal, plan = planning_ur5e.pose_plan_path(object_pose=midpoint, approach_direction="horizon")
+        print(len(plan))
+        i = input()
+        if i == "end":
+            break
 
     input("press \"enter\" to approach place position")
 

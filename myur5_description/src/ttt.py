@@ -1,6 +1,5 @@
 import numpy as np
 
 
-a = np.array([1, 3, 4, 2, 6, 5])
-
-sort(a, )
+for i in range(10):
+    print(np.random.uniform(1,10))
