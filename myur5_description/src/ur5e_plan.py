@@ -50,7 +50,8 @@ class ur5e_plan(object):
 
         
         arm_move_group = moveit_commander.MoveGroupCommander(arm)
-
+        arm_move_group.set_planner_id("RRTstar")
+        
         eef = arm_move_group.get_end_effector_link()
 
         # set start state
@@ -174,4 +175,34 @@ class ur5e_plan(object):
             plan_positions.append(plan.joint_trajectory.points[i].positions)
 
         # Note: We are just planning, not asking move_group to actually move the robot yet:
+        return last_position, plan_positions
+    
+    
+    
+    def plan_path(self, desired_position, arm ="manipulator"):
+    
+        arm_move_group = moveit_commander.MoveGroupCommander(arm)
+
+        # set start state
+        arm_move_group.set_start_state_to_current_state()
+
+        # set goal state
+        arm_move_group.set_goal_position_tolerance(0.001)
+
+        arm_move_group.remember_joint_values(values = desired_position)
+
+
+        plan = arm_move_group.plan()
+
+        last_position = np.array(plan[1].joint_trajectory.points[-1].positions)        
+
+        #display_trajectory.trajectory.append(plan[1])
+
+        arm_move_group.stop()
+        arm_move_group.clear_pose_targets()
+
+        plan_positions = []
+        for i in range(len(plan[1].joint_trajectory.points)):
+            plan_positions.append(plan[1].joint_trajectory.points[i].positions)
+        # Publish
         return last_position, plan_positions
