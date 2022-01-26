@@ -195,6 +195,9 @@ class control_planning_scene(object):
 
 
     def get_current_joint_state(self):
+        return self.get_planning_scene.robot_state.joint_state
+    
+    def get_current_joint_state_position(self):
         return self.get_planning_scene.robot_state.joint_state.position
 
     def set_joint_state_to_neutral_pose(self, neutral_pose=[0]):

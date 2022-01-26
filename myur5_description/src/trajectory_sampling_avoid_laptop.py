@@ -86,8 +86,7 @@ def main():
     
 
     pick_trajectory.append(plan1)
-
-    
+    print(type(robot.get_current_state()))
     input("press \"enter\" to open gripper")
 
     planning_scene_1.set_joint_state_to_neutral_pose(neutral_pose=r_last_position)
@@ -208,12 +207,15 @@ def main():
         planning_scene_1.set_joint_state_to_neutral_pose(neutral_pose=r_last_position)
         planning_scene_1._update_planning_scene(planning_scene_1.get_planning_scene)
         
+    planning_trajectory=np.array(planning_trajectory, dtype=object)
     np.savez("./sampled_trajectories/planning_trajectory.npz" , plan=planning_trajectory)
         
     
     
 if __name__ == "__main__":
+    
 
+    
 
     ap = argparse.ArgumentParser()
     ap.add_argument("-n", "--num-trajectories", type=int, default=100,
