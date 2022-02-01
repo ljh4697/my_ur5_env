@@ -147,9 +147,10 @@ def create_environment(planning_scene_1):
     
     ros_objects_pos = env.ros_objects_pos
     
+    goal = ["milk"]
     # find grasp point
-    for obj in env.objects:
-        m = obj.name
+    for obj in goal:
+        m = obj
         meshload[m]= trimesh.load(meshes_path[m], force='mesh')
         mesh_center_mass = meshload[m].center_mass
         dot0_face_z = np.where(np.dot(meshload[m].face_normals[:],np.array([0, 0, 1]))==0)[0]
@@ -258,6 +259,12 @@ def create_environment(planning_scene_1):
             objects_co[n] = planning_scene_1._make_mesh(name =n, mesh_path=meshes_path[n], pos=ros_objects_pos[n] ,quat=ros_objects_quaternion[n], size=(0.9, 0.9, 0.9))
         elif n == "laptop":
             objects_co[n] = planning_scene_1._make_mesh(name =n, mesh_path=meshes_path[n], pos=ros_objects_pos[n] ,quat=ros_objects_quaternion[n], size=(0.08, 0.08, 0.08))
+        elif n == "visualhuman":
+            objects_co[n] = planning_scene_1._make_mesh(name =n, mesh_path=meshes_path[n], pos=ros_objects_pos[n] ,quat=ros_objects_quaternion[n], size=(0.65, 0.65, 0.65))
+            
+            
+            
+            
             
     planning_scene_1._make_box(name="table_visual", pos=ros_table_visual_pos, size = table_visual_size)
     # add table legs
