@@ -13,7 +13,6 @@ from moveit_commander import (
 )
 from moveit_commander import move_group
 from moveit_commander.robot import RobotCommander
-
 import rospy
 import moveit_msgs.srv
 import moveit_msgs.msg
@@ -48,7 +47,7 @@ from test_mesh_pickandplace import cross_product
 from test_mesh_pickandplace import revolute_degree
 
 import argparse
-
+from get_feature import featuremapping
 
 def main():
     pick_trajectory = list()
@@ -58,9 +57,10 @@ def main():
     robot = RobotCommander()
     # arm_move_group = moveit_commander.MoveGroupCommander("ur5e_arm")
     # arm_move_group.set_start_state_to_current_state()
-
-
+    
     planning_scene_1 = control_planning_scene.control_planning_scene()
+    get_feature_map = featuremapping(planning_scene_1)
+    
     planning_ur5e = ur5e_plan.ur5e_plan()
 
     #env, box_position, obejct_01, neutral_position = 
@@ -86,8 +86,7 @@ def main():
     
 
     pick_trajectory.append(plan1)
-    print(type(robot.get_current_state()))
-    input("press \"enter\" to open gripper")
+    #input("press \"enter\" to open gripper")
 
     planning_scene_1.set_joint_state_to_neutral_pose(neutral_pose=r_last_position)
     planning_scene_1.r_open_gripper()
@@ -96,7 +95,7 @@ def main():
     plan2 = "open"
     pick_trajectory.append(plan2)
 
-    input("press \"enter\" to cartesian path")
+    #input("press \"enter\" to cartesian path")
 
 
     pose_goal.position.x += 0.1
@@ -106,7 +105,7 @@ def main():
 
     pick_trajectory.append(plan3)
     
-    input("press \"enter\" to grasp and attach box to gripper")
+    #input("press \"enter\" to grasp and attach box to gripper")
     
     planning_scene_1.set_joint_state_to_neutral_pose(neutral_pose=r_last_position)
     planning_scene_1.r_close_gripper()
@@ -117,7 +116,7 @@ def main():
     pick_trajectory.append(plan4)
     
 
-    input("press \"enter\" to retreat")
+    #input("press \"enter\" to retreat")
 
     planning_scene_1.r_open_gripper()
     planning_scene_1._update_planning_scene(planning_scene_1.get_planning_scene)
@@ -128,7 +127,6 @@ def main():
     pick_trajectory.append(plan5)
     
     pick_trajectory = np.array(pick_trajectory , dtype=object)
-    print(pick_trajectory.shape)
     
     # save pick trajectories 
     if not os.path.isdir('sampled_trajectories'):
@@ -143,7 +141,7 @@ def main():
 
     
     for i in range(args['num_trajectories']):
-        input()
+        input("sampling trajectory")
         
         planning_scene_1.set_joint_state_to_neutral_pose(neutral_pose=pick_last_position)
         planning_scene_1._update_planning_scene(planning_scene_1.get_planning_scene)
@@ -206,6 +204,19 @@ def main():
 
         planning_scene_1.set_joint_state_to_neutral_pose(neutral_pose=r_last_position)
         planning_scene_1._update_planning_scene(planning_scene_1.get_planning_scene)
+        
+        
+        # compute feature mapping 
+        traj_path = planning_trajectory[i]
+        features_sum = get_feature_map.get_feature(objects_co=objects_co ,planning_trajectory=planning_trajectory[i])   
+        
+        if i == 0:
+            print('end_effectors height/ ' + 'distance between eef and laptop/ ' + 'moving distance/ ' + 'distance between eef and user')
+            
+        print('trajectory\'s feature map =' + str(features_sum))
+        
+        
+        
         
     planning_trajectory=np.array(planning_trajectory, dtype=object)
     np.savez("./sampled_trajectories/planning_trajectory.npz" , plan=planning_trajectory)

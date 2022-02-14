@@ -5,7 +5,7 @@ from moveit_msgs.srv import GetPositionFK
 from moveit_msgs.srv import GetPositionFKRequest
 from moveit_msgs.srv import GetPositionFKResponse
 from sensor_msgs.msg import JointState
-
+import numpy as np
 """
 Class to make FK calls using the /compute_fk service.
 Author: Sammy Pfeiffer <Sammy.Pfeiffer at student.uts.edu.au>
@@ -20,16 +20,16 @@ class GetFK(object):
         :param str frame_id: frame_id to compute the forward kinematics
         into account collisions
         """
-        rospy.loginfo("Initalizing GetFK...")
+        #rospy.loginfo("Initalizing GetFK...")
         self.fk_link = fk_link
         self.frame_id = frame_id
-        rospy.loginfo("Asking forward kinematics for link: " + self.fk_link)
-        rospy.loginfo("PoseStamped answers will be on frame: " + self.frame_id)
+        #rospy.loginfo("Asking forward kinematics for link: " + self.fk_link)
+        #rospy.loginfo("PoseStamped answers will be on frame: " + self.frame_id)
         self.fk_srv = rospy.ServiceProxy('/compute_fk',
                                          GetPositionFK)
-        rospy.loginfo("Waiting for /compute_fk service...")
+        #rospy.loginfo("Waiting for /compute_fk service...")
         self.fk_srv.wait_for_service()
-        rospy.loginfo("Connected!")
+        #rospy.loginfo("Connected!")
         self.last_js = None
         self.js_sub = rospy.Subscriber('/joint_states',
                                        JointState,
@@ -65,9 +65,14 @@ class GetFK(object):
         req.header.frame_id = self.frame_id
         req.fk_link_names = [self.fk_link]
         req.robot_state.joint_state = joint_state
+        position = np.zeros(3)
         try:
             resp = self.fk_srv.call(req)
-            return resp
+            position[0] = resp.pose_stamped[0].pose.position.x
+            position[1] = resp.pose_stamped[0].pose.position.y
+            position[2] = resp.pose_stamped[0].pose.position.z
+            
+            return position
         except rospy.ServiceException as e:
             rospy.logerr("Service exception: " + str(e))
             resp = GetPositionFKResponse()
