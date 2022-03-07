@@ -36,7 +36,5 @@ roslaunch following
  - ur5_2
  
     ur5's meshes, urdf files
-    
- - preference_based_learning
    
  
