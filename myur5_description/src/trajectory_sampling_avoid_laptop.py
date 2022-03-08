@@ -137,11 +137,11 @@ def main():
     
     
     
-    input("press \"enter\" to approach midpoint position")
+    #input("press \"enter\" to approach midpoint position")
 
     
     for i in range(args['num_trajectories']):
-        input("sampling trajectory")
+        #input("sampling trajectory")
         
         planning_scene_1.set_joint_state_to_neutral_pose(neutral_pose=pick_last_position)
         planning_scene_1._update_planning_scene(planning_scene_1.get_planning_scene)
@@ -213,13 +213,14 @@ def main():
         if i == 0:
             print('end_effectors height/ ' + 'distance between eef and laptop/ ' + 'moving distance/ ' + 'distance between eef and user')
             
+        print(i)
         print('trajectory\'s feature map =' + str(features_sum))
         
         
         
         
     planning_trajectory=np.array(planning_trajectory, dtype=object)
-    np.savez("./sampled_trajectories/planning_trajectory.npz" , plan=planning_trajectory)
+    np.savez("./sampled_trajectories/test.npz" , plan=planning_trajectory)
         
     
     
@@ -229,7 +230,7 @@ if __name__ == "__main__":
     
 
     ap = argparse.ArgumentParser()
-    ap.add_argument("-n", "--num-trajectories", type=int, default=100,
+    ap.add_argument("-n", "--num-trajectories", type=int, default=200,
         help="# of sampled trajectories")
     args = vars(ap.parse_args())
     main()

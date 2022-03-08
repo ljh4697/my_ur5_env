@@ -1,5 +1,7 @@
 import numpy as np
 
 
-for i in range(10):
-    print(np.random.uniform(1,10))
+def main():
+    print("hello")
+# for i in range(200):
+#     print(i//2)

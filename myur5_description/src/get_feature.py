@@ -67,6 +67,7 @@ class featuremapping(object):
         return feature_mapping
         
     def get_feature(self, objects_co, planning_trajectory = None):
+        
         '''
         1. end_effector's height
         2. distance between eef and laptop
@@ -103,11 +104,12 @@ class featuremapping(object):
                 # trajectory의 feature map (mean value)
                 feature_mapping = self.compute_feature_map(step)
                 t_feature_mapping += feature_mapping
-                print(feature_mapping)
+                #print(feature_mapping)
                 
             if type(step) == str:
-                print(step)
-        t_feature_mapping 
+                #print(step)
+                pass
+         
                 
         return  t_feature_mapping
     
