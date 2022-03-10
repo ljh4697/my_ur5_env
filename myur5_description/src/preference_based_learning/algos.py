@@ -47,26 +47,26 @@ def nonbatch(simulation_object, w_samples):
     return opt_res[0][0:z], opt_res[0][z:2*z]
 
 
-def select_top_candidates(simulation_object, w_samples, B):
-    d = simulation_object.num_of_features
-    z = simulation_object.feed_size
-
-    inputs_set = np.zeros(shape=(0,2*z))
+def select_top_candidates(w_samples, B):
+    #d = simulation_object.num_of_features
+    #z = simulation_object.feed_size
+    d = 4
+    # inputs_set = np.zeros(shape=(0,2*z))
     psi_set = np.zeros(shape=(0,d))
     f_values = np.zeros(shape=(0))
-    data = np.load('ctrl_samples/' + simulation_object.name + '.npz')
-    inputs_set = data['inputs_set']
-    psi_set = data['psi_set']
+    data = np.load('../sampled_trajectories/psi_set.npz')
+    # inputs_set = data['inputs_set']
+    psi_set = data['PSI_SET']
     f_values = func_psi(psi_set, w_samples)
     id_input = np.argsort(f_values)
-    inputs_set = inputs_set[id_input[0:B]]
-    psi_set = psi_set[id_input[0:B]]
-    f_values = f_values[id_input[0:B]]
-    return inputs_set, psi_set, f_values, d, z
+    # inputs_set = inputs_set[id_input[0:B]]
+    # psi_set = psi_set[id_input[0:B]]
+    # f_values = f_values[id_input[0:B]]
+    return id_input[0:B]
 
-def greedy(simulation_object, w_samples, b):
-    inputs_set, _, _, _, z = select_top_candidates(simulation_object, w_samples, b)
-    return inputs_set[:, :z], inputs_set[:, z:]
+def greedy(w_samples, b):
+    id_input= select_top_candidates(w_samples, b)
+    return id_input
 
 def medoids(simulation_object, w_samples, b, B=200):
     inputs_set, psi_set, _, _, z = select_top_candidates(simulation_object, w_samples, B)

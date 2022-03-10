@@ -1,7 +1,7 @@
 from sampling import Sampler
 import algos
 import numpy as np
-from simulation_utils import create_env, get_feedback, run_algo
+from simulation_utils import get_feedback, run_algo
 import sys
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -18,13 +18,14 @@ d = 4 # num_of_features
 
 
 
-def batch(task, method, N, M, b):
+def batch(method, N, M, b):
     
     if N % b != 0:
         print('N must be divisible to b')
         exit(0)
     B = 20*b
-
+    data = np.load('../sampled_trajectories/psi_set.npz')
+    data_psi_set = data['PSI_SET']
     # simulation_object = create_env(task)
     # d = simulation_object.num_of_features
     # lower_input_bound = [x[0] for x in simulation_object.feed_bounds]
@@ -39,14 +40,12 @@ def batch(task, method, N, M, b):
     
     
     
-    inputA_set = np.random.uniform(low=2*lower_input_bound, high=2*upper_input_bound, size=(b, 2*simulation_object.feed_size))
-    inputB_set = np.random.uniform(low=2*lower_input_bound, high=2*upper_input_bound, size=(b, 2*simulation_object.feed_size))
+    init_psi_id = np.random.randint(1, 100, b)
+    
     for j in range(b):
-        input_A = inputA_set[j]
-        input_B = inputB_set[j]
         # get_feedback : phi, psi, user's feedback 값을 구함
         
-        psi, s = get_feedback(simulation_object, input_A, input_B, true_w)
+        psi, s = get_feedback(data_psi_set[init_psi_id[j]], true_w)
         psi_set.append(psi)
         s_set.append(s)
     i = b
@@ -84,11 +83,12 @@ def batch(task, method, N, M, b):
         print('Samples so far: ' + str(i))
         
         # run_algo :
-        inputA_set, inputB_set = run_algo(method, simulation_object, w_samples, b, B)
+        psi_set_id = run_algo(method, w_samples, b, B)
         for j in range(b):
-            input_A = inputA_set[j]
-            input_B = inputB_set[j]
-            psi, s = get_feedback(simulation_object, input_B, input_A, true_w)
+            
+            
+            psi, s = get_feedback(data_psi_set[psi_set_id[j]], true_w)
+
             psi_set.append(psi)
             s_set.append(s)
             

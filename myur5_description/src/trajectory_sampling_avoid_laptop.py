@@ -209,7 +209,7 @@ def main():
         # compute feature mapping 
         traj_path = planning_trajectory[i]
         features_sum = get_feature_map.get_feature(objects_co=objects_co ,planning_trajectory=planning_trajectory[i])   
-        
+        print(planning_trajectory[i])
         if i == 0:
             print('end_effectors height/ ' + 'distance between eef and laptop/ ' + 'moving distance/ ' + 'distance between eef and user')
             

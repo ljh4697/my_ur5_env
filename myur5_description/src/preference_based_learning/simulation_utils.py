@@ -1,7 +1,7 @@
 import numpy as np
 import scipy.optimize as opt
 import algos
-from models import Driver, LunarLander, MountainCar, Swimmer, Tosser
+#from models import Driver, LunarLander, MountainCar, Swimmer, Tosser
 
 
 
@@ -9,17 +9,17 @@ from models import Driver, LunarLander, MountainCar, Swimmer, Tosser
 
 
 
-def get_feedback(simulation_object, input_A, input_B, true_w):
+def get_feedback(psi, true_w):
      
     # env 환경 member로 가지고 있으면 좋을 것 같음
     # human w -> true w
     #true_w = [0.29754784,0.03725074,0.00664673,0.80602143]
     
-    simulation_object.feed(input_A)
-    phi_A = simulation_object.get_features()
-    simulation_object.feed(input_B)
-    phi_B = simulation_object.get_features()
-    psi = np.array(phi_A) - np.array(phi_B)
+    # simulation_object.feed(input_A)
+    # phi_A = simulation_object.get_features()
+    # simulation_object.feed(input_B)
+    # phi_B = simulation_object.get_features()
+    # psi = np.array(phi_A) - np.array(phi_B)
     s = 0
     while s==0:
         
@@ -47,35 +47,35 @@ def get_feedback(simulation_object, input_A, input_B, true_w):
     return psi, s
 
 
-def create_env(task):
-    if task == 'driver':
-        return Driver()
-    elif task == 'lunarlander':
-        return LunarLander()
-    elif task == 'mountaincar':
-        return MountainCar()
-    elif task == 'swimmer':
-        return Swimmer()
-    elif task == 'tosser':
-        return Tosser()
-    else:
-        print('There is no task called ' + task)
-        exit(0)
+# def create_env(task):
+#     if task == 'driver':
+#         return Driver()
+#     elif task == 'lunarlander':
+#         return LunarLander()
+#     elif task == 'mountaincar':
+#         return MountainCar()
+#     elif task == 'swimmer':
+#         return Swimmer()
+#     elif task == 'tosser':
+#         return Tosser()
+#     else:
+#         print('There is no task called ' + task)
+#         exit(0)
 
 
-def run_algo(method, simulation_object, w_samples, b=10, B=200):
+def run_algo(method, w_samples, b=10, B=200):
     if method == 'nonbatch':
-        return algos.nonbatch(simulation_object, w_samples)
+        return algos.nonbatch(w_samples)
     if method == 'greedy':
-        return algos.greedy(simulation_object, w_samples, b)
+        return algos.greedy(w_samples, b)
     elif method == 'medoids':
-        return algos.medoids(simulation_object, w_samples, b, B)
+        return algos.medoids(w_samples, b, B)
     elif method == 'boundary_medoids':
-        return algos.boundary_medoids(simulation_object, w_samples, b, B)
+        return algos.boundary_medoids(w_samples, b, B)
     elif method == 'successive_elimination':
-        return algos.successive_elimination(simulation_object, w_samples, b, B)
+        return algos.successive_elimination(w_samples, b, B)
     elif method == 'random':
-        return algos.random(simulation_object, w_samples)
+        return algos.random(w_samples)
     else:
         print('There is no method called ' + method)
         exit(0)
