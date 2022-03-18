@@ -52,7 +52,11 @@ from get_feature import featuremapping
 def main():
     pick_trajectory = list()
     planning_trajectory = [[] for i in range(args['num_trajectories'])]
+    display_trajectory = [[] for i in range(args['num_trajectories'])]
+    trajectory_start = [[] for i in range(args['num_trajectories'])]
     
+
+
     rospy.init_node("tutorial_ur5e", anonymous=True)
     robot = RobotCommander()
     # arm_move_group = moveit_commander.MoveGroupCommander("ur5e_arm")
@@ -82,7 +86,7 @@ def main():
 
 
     #start planning
-    r_last_position, pose_goal, plan1 = planning_ur5e.pose_plan_path(object_pose=approach_position['milk'],approach_direction="horizon")
+    r_last_position, pose_goal, plan1, _ = planning_ur5e.pose_plan_path(object_pose=approach_position['milk'],approach_direction="horizon")
     
 
     pick_trajectory.append(plan1)
@@ -101,7 +105,7 @@ def main():
     pose_goal.position.x += 0.1
     
 
-    r_last_position, plan3=planning_ur5e.plan_cartesian_path(wpose=pose_goal)
+    r_last_position, plan3, _ =planning_ur5e.plan_cartesian_path(wpose=pose_goal)
 
     pick_trajectory.append(plan3)
     
@@ -122,7 +126,7 @@ def main():
     planning_scene_1._update_planning_scene(planning_scene_1.get_planning_scene)
     pose_goal.position.z += 0.1
     
-    pick_last_position, plan5=planning_ur5e.plan_cartesian_path(wpose=pose_goal)
+    pick_last_position, plan5, _=planning_ur5e.plan_cartesian_path(wpose=pose_goal)
     
     pick_trajectory.append(plan5)
     
@@ -148,9 +152,10 @@ def main():
         midpoint = grasp_point['milk'].copy()
         midpoint[0] += np.random.uniform(0.03, 0.17) ; midpoint[1] += np.random.uniform(0.34, 0.70) ; midpoint[2] += np.random.uniform(0.03, 0.75)
         
-        r_last_position, pose_goal, plan6 = planning_ur5e.pose_plan_path(object_pose=midpoint, approach_direction="horizon")
+        r_last_position, pose_goal, plan6, plan = planning_ur5e.pose_plan_path(object_pose=midpoint, approach_direction="horizon")
         planning_trajectory[i].append(plan6)
-        
+        display_trajectory[i].append(plan)
+        trajectory_start[i].append(planning_scene_1.get_planning_scene.robot_state)
         # i = input()
         # if i == "end":
         #     break
@@ -158,8 +163,10 @@ def main():
 
         planning_scene_1.set_joint_state_to_neutral_pose(neutral_pose=r_last_position)
         planning_scene_1._update_planning_scene(planning_scene_1.get_planning_scene)
-        r_last_position, pose_goal, plan7 = planning_ur5e.pose_plan_path(object_pose=place_position, approach_direction="horizon")
+        r_last_position, pose_goal, plan7, plan = planning_ur5e.pose_plan_path(object_pose=place_position, approach_direction="horizon")
         planning_trajectory[i].append(plan7)
+        display_trajectory[i].append(plan)
+        trajectory_start[i].append(planning_scene_1.get_planning_scene.robot_state)
     
 
 
@@ -169,7 +176,7 @@ def main():
         planning_scene_1._update_planning_scene(planning_scene_1.get_planning_scene)
         pose_goal.position.z -= 0.1
 
-        r_last_position, plan8=planning_ur5e.plan_cartesian_path(wpose=pose_goal)
+        r_last_position, plan8, _=planning_ur5e.plan_cartesian_path(wpose=pose_goal)
         planning_trajectory[i].append(plan8)
 
         place_pose = copy_pose(pose_goal)
@@ -189,7 +196,7 @@ def main():
         #input("press \"enter\" to retreat")
 
         pose_goal.position.x -= 0.1
-        r_last_position, plan10 = planning_ur5e.plan_cartesian_path(wpose=pose_goal)
+        r_last_position, plan10, _ = planning_ur5e.plan_cartesian_path(wpose=pose_goal)
         planning_trajectory[i].append(plan10)
 
         #input("pree \"enter\" to plan to neutral pose")
@@ -197,7 +204,7 @@ def main():
 
         planning_scene_1.set_joint_state_to_neutral_pose(neutral_pose=r_last_position)
         planning_scene_1._update_planning_scene(planning_scene_1.get_planning_scene)
-        r_last_position, plan11 = planning_ur5e.position_plan_path(neutral_position)
+        r_last_position, plan11, _ = planning_ur5e.position_plan_path(neutral_position)
         planning_trajectory[i].append(plan11)
 
         #input("press \"enter\" to set current pose to neutral pose")
@@ -209,19 +216,22 @@ def main():
         # compute feature mapping 
         traj_path = planning_trajectory[i]
         features_sum = get_feature_map.get_feature(objects_co=objects_co ,planning_trajectory=planning_trajectory[i])   
-        print(planning_trajectory[i])
+        #print(planning_trajectory[i])
         if i == 0:
             print('end_effectors height/ ' + 'distance between eef and laptop/ ' + 'moving distance/ ' + 'distance between eef and user')
             
-        print(i)
+        #print(i)
         print('trajectory\'s feature map =' + str(features_sum))
         
         
         
         
     planning_trajectory=np.array(planning_trajectory, dtype=object)
-    np.savez("./sampled_trajectories/test.npz" , plan=planning_trajectory)
-        
+    np.savez("./sampled_trajectories/test_planning_trajectory.npz" , plan=planning_trajectory)
+    display_trajectory=np.array(display_trajectory, dtype=object)
+    np.savez("./sampled_trajectories/test_display_trajectory.npz" , plan=display_trajectory)
+    trajectory_start=np.array(trajectory_start, dtype=object)
+    np.savez("./sampled_trajectories/test_trajectory_start.npz" , plan=trajectory_start)
     
     
 if __name__ == "__main__":

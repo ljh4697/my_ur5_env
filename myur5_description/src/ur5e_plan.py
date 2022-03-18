@@ -104,7 +104,7 @@ class ur5e_plan(object):
             plan_positions.append(plan[1].joint_trajectory.points[i].positions)
         # Publish
         #d.publish(display_trajectory)
-        return last_position, pose_goal, plan_positions
+        return last_position, pose_goal, plan_positions, plan[1]
 
 
     def position_plan_path(self, desired_position, object_orientation=(0, pi, 0), arm ="manipulator"):
@@ -134,7 +134,7 @@ class ur5e_plan(object):
             plan_positions.append(plan[1].joint_trajectory.points[i].positions)
         # Publish
         #d.publish(display_trajectory)
-        return last_position, plan_positions
+        return last_position, plan_positions, plan[1]
 
 
 
@@ -175,7 +175,7 @@ class ur5e_plan(object):
             plan_positions.append(plan.joint_trajectory.points[i].positions)
 
         # Note: We are just planning, not asking move_group to actually move the robot yet:
-        return last_position, plan_positions
+        return last_position, plan_positions, plan
     
     
     
@@ -205,4 +205,4 @@ class ur5e_plan(object):
         for i in range(len(plan[1].joint_trajectory.points)):
             plan_positions.append(plan[1].joint_trajectory.points[i].positions)
         # Publish
-        return last_position, plan_positions
+        return last_position, plan_positions, plan[1]
