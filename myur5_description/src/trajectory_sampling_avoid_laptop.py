@@ -125,9 +125,14 @@ def main():
     planning_scene_1.r_open_gripper()
     planning_scene_1._update_planning_scene(planning_scene_1.get_planning_scene)
     pose_goal.position.z += 0.1
-    
-    pick_last_position, plan5, _=planning_ur5e.plan_cartesian_path(wpose=pose_goal)
-    
+
+    current_robot_state = moveit_msgs.msg.RobotState()
+    current_robot_state = copy.deepcopy(planning_scene_1.get_planning_scene.robot_state)
+
+
+
+    pick_last_position, plan5, ct_plan=planning_ur5e.plan_cartesian_path(wpose=pose_goal)
+
     pick_trajectory.append(plan5)
     
     pick_trajectory = np.array(pick_trajectory , dtype=object)
@@ -146,16 +151,24 @@ def main():
     
     for i in range(args['num_trajectories']):
         #input("sampling trajectory")
+
+        #print(planning_scene_1.get_current_joint_state())
+        #print('**************************************************')
+        trajectory_start[i].append(current_robot_state)
+        display_trajectory[i].append(ct_plan)
         
         planning_scene_1.set_joint_state_to_neutral_pose(neutral_pose=pick_last_position)
         planning_scene_1._update_planning_scene(planning_scene_1.get_planning_scene)
+
+
+
         midpoint = grasp_point['milk'].copy()
         midpoint[0] += np.random.uniform(0.03, 0.17) ; midpoint[1] += np.random.uniform(0.34, 0.70) ; midpoint[2] += np.random.uniform(0.03, 0.75)
         
         r_last_position, pose_goal, plan6, plan = planning_ur5e.pose_plan_path(object_pose=midpoint, approach_direction="horizon")
-        planning_trajectory[i].append(plan6)
-        display_trajectory[i].append(plan)
-        trajectory_start[i].append(planning_scene_1.get_planning_scene.robot_state)
+
+        #trajectory_start[i].append(planning_scene_1.get_planning_scene.robot_state)
+
         # i = input()
         # if i == "end":
         #     break
@@ -163,10 +176,10 @@ def main():
 
         planning_scene_1.set_joint_state_to_neutral_pose(neutral_pose=r_last_position)
         planning_scene_1._update_planning_scene(planning_scene_1.get_planning_scene)
-        r_last_position, pose_goal, plan7, plan = planning_ur5e.pose_plan_path(object_pose=place_position, approach_direction="horizon")
-        planning_trajectory[i].append(plan7)
+        planning_trajectory[i].append(plan6)
         display_trajectory[i].append(plan)
-        trajectory_start[i].append(planning_scene_1.get_planning_scene.robot_state)
+        r_last_position, pose_goal, plan7, plan = planning_ur5e.pose_plan_path(object_pose=place_position, approach_direction="horizon")
+
     
 
 
@@ -174,10 +187,12 @@ def main():
 
         planning_scene_1.set_joint_state_to_neutral_pose(neutral_pose=r_last_position)
         planning_scene_1._update_planning_scene(planning_scene_1.get_planning_scene)
+        planning_trajectory[i].append(plan7)
+        display_trajectory[i].append(plan)
         pose_goal.position.z -= 0.1
 
-        r_last_position, plan8, _=planning_ur5e.plan_cartesian_path(wpose=pose_goal)
-        planning_trajectory[i].append(plan8)
+        r_last_position, plan8, ct_plan=planning_ur5e.plan_cartesian_path(wpose=pose_goal)
+
 
         place_pose = copy_pose(pose_goal)
 
@@ -192,25 +207,28 @@ def main():
         planning_trajectory[i].append(plan9)
         
         planning_scene_1._update_planning_scene(planning_scene_1.get_planning_scene)
+        planning_trajectory[i].append(plan8)
+        display_trajectory[i].append(ct_plan)
 
         #input("press \"enter\" to retreat")
 
         pose_goal.position.x -= 0.1
         r_last_position, plan10, _ = planning_ur5e.plan_cartesian_path(wpose=pose_goal)
-        planning_trajectory[i].append(plan10)
 
         #input("pree \"enter\" to plan to neutral pose")
 
 
         planning_scene_1.set_joint_state_to_neutral_pose(neutral_pose=r_last_position)
         planning_scene_1._update_planning_scene(planning_scene_1.get_planning_scene)
+        planning_trajectory[i].append(plan10)
+
         r_last_position, plan11, _ = planning_ur5e.position_plan_path(neutral_position)
-        planning_trajectory[i].append(plan11)
 
         #input("press \"enter\" to set current pose to neutral pose")
 
         planning_scene_1.set_joint_state_to_neutral_pose(neutral_pose=r_last_position)
         planning_scene_1._update_planning_scene(planning_scene_1.get_planning_scene)
+        planning_trajectory[i].append(plan11)
         
         
         # compute feature mapping 
