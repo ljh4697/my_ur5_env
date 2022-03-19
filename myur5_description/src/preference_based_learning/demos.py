@@ -26,12 +26,11 @@ def batch(method, N, M, b):
     B = 20*b
     data = np.load('../sampled_trajectories/psi_set.npz')
     data_psi_set = data['PSI_SET']
+
     # simulation_object = create_env(task)
     # d = simulation_object.num_of_features
     # lower_input_bound = [x[0] for x in simulation_object.feed_bounds]
     # upper_input_bound = [x[1] for x in simulation_object.feed_bounds]
-
-
 
 
     w_sampler = Sampler(d)

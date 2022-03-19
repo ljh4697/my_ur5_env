@@ -191,7 +191,7 @@ def main():
         display_trajectory[i].append(plan)
         pose_goal.position.z -= 0.1
 
-        r_last_position, plan8, ct_plan=planning_ur5e.plan_cartesian_path(wpose=pose_goal)
+        r_last_position, plan8, ct_plan2=planning_ur5e.plan_cartesian_path(wpose=pose_goal)
 
 
         place_pose = copy_pose(pose_goal)
@@ -208,7 +208,7 @@ def main():
         
         planning_scene_1._update_planning_scene(planning_scene_1.get_planning_scene)
         planning_trajectory[i].append(plan8)
-        display_trajectory[i].append(ct_plan)
+        display_trajectory[i].append(ct_plan2)
 
         #input("press \"enter\" to retreat")
 
