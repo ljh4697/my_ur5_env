@@ -238,18 +238,18 @@ def main():
         if i == 0:
             print('end_effectors height/ ' + 'distance between eef and laptop/ ' + 'moving distance/ ' + 'distance between eef and user')
             
-        #print(i)
+        print(i)
         print('trajectory\'s feature map =' + str(features_sum))
         
         
         
         
     planning_trajectory=np.array(planning_trajectory, dtype=object)
-    np.savez("./sampled_trajectories/test_planning_trajectory.npz" , plan=planning_trajectory)
+    np.savez("./sampled_trajectories/planning_trajectory.npz" , plan=planning_trajectory)
     display_trajectory=np.array(display_trajectory, dtype=object)
-    np.savez("./sampled_trajectories/test_display_trajectory.npz" , plan=display_trajectory)
+    np.savez("./sampled_trajectories/display_trajectory.npz" , plan=display_trajectory)
     trajectory_start=np.array(trajectory_start, dtype=object)
-    np.savez("./sampled_trajectories/test_trajectory_start.npz" , plan=trajectory_start)
+    np.savez("./sampled_trajectories/trajectory_start.npz" , plan=trajectory_start)
     
     
 if __name__ == "__main__":
