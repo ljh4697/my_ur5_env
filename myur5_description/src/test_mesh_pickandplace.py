@@ -148,6 +148,8 @@ def create_environment(planning_scene_1):
     ros_objects_pos = env.ros_objects_pos
     
     goal = ["milk"]
+
+
     # find grasp point
     for obj in goal:
         m = obj
@@ -323,8 +325,7 @@ if __name__ == "__main__":
 
     r_last_position, pose_goal, plan = planning_ur5e.pose_plan_path(object_pose=approach_position['milk'], approach_direction=revolute_degree(approach_direction['milk']))
 
-    # print(plan)
-    # print(type(box_position))
+
 
     input("press \"enter\" to open gripper")
 
@@ -343,7 +344,6 @@ if __name__ == "__main__":
 
     r_last_position, plan=planning_ur5e.plan_cartesian_path(wpose=pose_goal)
 
-    #print(plan)
 
     input("press \"enter\" to grasp and attach box to gripper")
     

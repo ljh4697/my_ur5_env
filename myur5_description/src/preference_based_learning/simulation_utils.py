@@ -20,14 +20,6 @@ import algos
 
 def get_feedback(psi, true_w):
      
-    # human w -> true w
-    #true_w = [0.29754784,0.03725074,0.00664673,0.80602143]
-    
-    # simulation_object.feed(input_A)
-    # phi_A = simulation_object.get_features()
-    # simulation_object.feed(input_B)
-    # phi_B = simulation_object.get_features()
-    # psi = np.array(phi_A) - np.array(phi_B)
     s = 0
     while s==0:
         
@@ -36,22 +28,7 @@ def get_feedback(psi, true_w):
             s = 1
         else:
             s =-1
-        # selection = input('A/B to watch, 1/2 to vote: ').lower()
-        
-        
-        
-        
-        
-        # if selection == 'a':
-        #     simulation_object.feed(input_A)
-        #     simulation_object.watch(1)
-        # elif selection == 'b':
-        #     simulation_object.feed(input_B)
-        #     simulation_object.watch(1)
-        # elif selection == '1':
-        #     s = 1
-        # elif selection == '2':
-        #     s = -1
+
     return psi, s
 
 

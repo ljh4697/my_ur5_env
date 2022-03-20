@@ -26,7 +26,6 @@ estimate_w = [0]
 
 lower_input_bound = -3.14
 upper_input_bound = 3.14
-#num_of_features = 4
 d = 4 # num_of_features
 
 
