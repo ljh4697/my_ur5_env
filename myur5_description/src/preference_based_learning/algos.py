@@ -60,35 +60,37 @@ def select_top_candidates(w_samples, B):
     f_values = func_psi(psi_set, w_samples)
     id_input = np.argsort(f_values)
     # inputs_set = inputs_set[id_input[0:B]]
-    # psi_set = psi_set[id_input[0:B]]
+    psi_set = psi_set[id_input[0:B]]
     # f_values = f_values[id_input[0:B]]
-    return id_input[0:B]
+    return id_input[0:B], psi_set
 
 def greedy(w_samples, b):
-    id_input= select_top_candidates(w_samples, b)
+    id_input, psi_set= select_top_candidates(w_samples, b)
     return id_input
 
-def medoids(simulation_object, w_samples, b, B=200):
-    inputs_set, psi_set, _, _, z = select_top_candidates(simulation_object, w_samples, B)
+
+# sampling 된 trajectory 개수가 200개가 넘지 않아 밑에있는 방법들은 효과적이지 않는 것 같다.
+# 왜냐하면 B만큼의 batch 개를 먼저 뽑는 과정 때문에
+def medoids(w_samples, b, B=200):
+    id_input, psi_set = select_top_candidates(w_samples, B)
 
     D = pairwise_distances(psi_set, metric='euclidean')
     M, C = kmedoids.kMedoids(D, b)
-    return inputs_set[M, :z], inputs_set[M, z:]
+    return M
 
 def boundary_medoids(simulation_object, w_samples, b, B=200):
-    inputs_set, psi_set, _, _, z = select_top_candidates(simulation_object, w_samples, B)
+    id_input, psi_set = select_top_candidates(w_samples, B)
 
     hull = ConvexHull(psi_set)
     simplices = np.unique(hull.simplices)
     boundary_psi = psi_set[simplices]
-    boundary_inputs = inputs_set[simplices]
     D = pairwise_distances(boundary_psi, metric='euclidean')
     M, C = kmedoids.kMedoids(D, b)
     
-    return boundary_inputs[M, :z], boundary_inputs[M, z:]
+    return M
 
 def successive_elimination(simulation_object, w_samples, b, B=200):
-    inputs_set, psi_set, f_values, d, z = select_top_candidates(simulation_object, w_samples, B)
+    inputs_set, psi_set, f_values, d, z = select_top_candidates(w_samples, B)
 
     D = pairwise_distances(psi_set, metric='euclidean')
     D = np.array([np.inf if x==0 else x for x in D.reshape(B*B,1)]).reshape(B,B)

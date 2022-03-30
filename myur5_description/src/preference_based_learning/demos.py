@@ -7,19 +7,16 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import os
 sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
-import rospy
-import moveit_commander
-import moveit_msgs.msg
-import geometry_msgs.msg
-import trajectory_msgs.msg
+import copy
 from test_mesh_pickandplace import create_environment
 import control_planning_scene
 import scipy.optimize as opt
 import algos
+from scipy.stats import kde
+import pandas as pd
 
 #true_w = [0.29754784,0.03725074,0.00664673,0.80602143]
-true_w = list(np.random.rand(4))
-true_w = np.array(true_w)
+true_w = np.random.rand(4)
 true_w = true_w/np.linalg.norm(true_w)
 
 estimate_w = [0]
@@ -27,6 +24,131 @@ estimate_w = [0]
 lower_input_bound = -3.14
 upper_input_bound = 3.14
 d = 4 # num_of_features
+
+def adversarial_batch(method, N, M, b):
+    
+    
+    
+    e = 15
+    
+    def get_target_w(true_w, t):
+        n_w = copy.deepcopy(true_w)
+        
+        n_w[0] += (1/t)*np.sin(t)
+        n_w[1] += (2/t**2)*np.cos(t)
+        n_w[2] += (1/t)*np.sin(t)
+        n_w[3] += (1.5/t)*np.cos(t)
+        
+        n_w = n_w/np.linalg.norm(n_w)
+        return n_w
+        
+    
+    
+    
+    if N % b != 0:
+        print('N must be divisible to b')
+        exit(0)
+    B = 20*b
+    data = np.load('../sampled_trajectories/psi_set.npz')
+    data_psi_set = data['PSI_SET']
+
+    estimate_w = [[0]for i in range(e)]
+
+    for ite in range(e):
+        
+        
+        true_w = np.random.rand(4)
+        true_w = true_w/np.linalg.norm(true_w)
+        t = 1
+
+
+        w_sampler = Sampler(d)
+        
+        #sampled w visualization
+        # w_samples = w_sampler.sample(M)
+        # df = pd.DataFrame(w_samples[:,0])
+        # df.plot(kind='density')
+        # plt.xlim([-1,1])
+        # plt.ylim([0,2])
+        # plt.show()
+        
+        psi_set = []
+        s_set = []
+        
+        
+        
+        init_psi_id = np.random.randint(1, 100, b)
+        
+        for j in range(b):
+            # get_feedback : phi, psi, user's feedback 값을 구함
+            target_w = get_target_w(true_w, t)
+            psi, s = get_feedback(data_psi_set[init_psi_id[j]], target_w)
+
+            psi_set.append(psi)
+            s_set.append(s)
+            t+=1
+        i = b
+        m = 0
+        
+        
+        while i < N:
+            w_sampler.A = psi_set
+            w_sampler.y = np.array(s_set).reshape(-1,1)
+            w_samples = w_sampler.sample(M)
+            
+            #sampled w visualization
+            # df = pd.DataFrame(w_samples[:,0])
+            # df.plot(kind='density')
+            # plt.xlim([-1,1])
+            # plt.ylim([0,2])
+            # plt.show()
+        
+            
+            print(len(w_samples[:,0]))
+            #input()
+            
+            print(f'sample length {len(w_samples)}')
+            print(f'1st w sample {w_samples[0]}')
+            
+            
+            mean_w_samples = np.mean(w_samples,axis=0)
+            current_w = mean_w_samples/np.linalg.norm(mean_w_samples)
+            
+            m = np.dot(current_w, true_w)/(np.linalg.norm(current_w)*np.linalg.norm(true_w))
+            estimate_w[ite].append(m)
+            
+            
+            print('evaluate metric : {}'.format(m))
+            print('w-estimate = {}'.format(current_w))
+            print('Samples so far: ' + str(i))
+            
+            # run_algo :
+            psi_set_id = run_algo(method, w_samples, b, B)
+            for j in range(b):
+                
+                target_w = get_target_w(true_w, t)
+                psi, s = get_feedback(data_psi_set[psi_set_id[j]], target_w)
+
+                psi_set.append(psi)
+                s_set.append(s)
+                
+                t+=1
+                
+                
+            i += b
+            
+        w_sampler.A = psi_set
+        w_sampler.y = np.array(s_set).reshape(-1,1)
+        w_samples = w_sampler.sample(M)
+        mean_w_samples = np.mean(w_samples, axis=0)
+        print('w-estimate = {}'.format(mean_w_samples/np.linalg.norm(mean_w_samples)))
+        
+    plt.plot(10*np.arange(len(estimate_w[ite])), np.mean(np.array(estimate_w), axis=0))
+    plt.ylabel('m')
+    plt.xlabel('N')
+    plt.savefig('./outputs/targetw_output.png')
+    plt.show()
+    
 
 
 
@@ -39,13 +161,17 @@ def batch(method, N, M, b):
     data = np.load('../sampled_trajectories/psi_set.npz')
     data_psi_set = data['PSI_SET']
 
-    # simulation_object = create_env(task)
-    # d = simulation_object.num_of_features
-    # lower_input_bound = [x[0] for x in simulation_object.feed_bounds]
-    # upper_input_bound = [x[1] for x in simulation_object.feed_bounds]
-
 
     w_sampler = Sampler(d)
+    
+    #sampled w visualization
+    # w_samples = w_sampler.sample(M)
+    # df = pd.DataFrame(w_samples[:,0])
+    # df.plot(kind='density')
+    # plt.xlim([-1,1])
+    # plt.ylim([0,2])
+    # plt.show()
+    
     psi_set = []
     s_set = []
     
@@ -68,8 +194,14 @@ def batch(method, N, M, b):
         w_sampler.y = np.array(s_set).reshape(-1,1)
         w_samples = w_sampler.sample(M)
         
+        #sampled w visualization
+        # df = pd.DataFrame(w_samples[:,0])
+        # df.plot(kind='density')
+        # plt.xlim([-1,1])
+        # plt.ylim([0,2])
+        # plt.show()
+    
         
-
         print(len(w_samples[:,0]))
         #input()
         

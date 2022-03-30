@@ -9,7 +9,7 @@ if method == 'nonbatch' or method == 'random':
     demos.nonbatch(method, N, M)
 elif method == 'greedy' or method == 'medoids' or method == 'boundary_medoids' or method == 'successive_elimination':
     b = int(sys.argv[4])
-    demos.batch(method, N, M, b)
+    demos.adversarial_batch(method, N, M, b)
 elif method == 'user_greedy':
     b = int(sys.argv[4])
     demos.user_batch(method, N, M, b)
