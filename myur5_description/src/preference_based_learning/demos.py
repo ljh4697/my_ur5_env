@@ -34,10 +34,10 @@ def adversarial_batch(method, N, M, b):
     def get_target_w(true_w, t):
         n_w = copy.deepcopy(true_w)
         
-        n_w[0] += (1/t)*np.sin(t)
-        n_w[1] += (2/t**2)*np.cos(t)
-        n_w[2] += (1/t)*np.sin(t)
-        n_w[3] += (1.5/t)*np.cos(t)
+        n_w[0] -= (1/t)*np.sin(t)
+        n_w[1] -= (2/t**2)*np.cos(t)
+        #n_w[2] += (1/t)*np.sin(t)
+        #n_w[3] += (3/t)*np.cos(t)
         
         n_w = n_w/np.linalg.norm(n_w)
         return n_w
@@ -59,6 +59,7 @@ def adversarial_batch(method, N, M, b):
         
         true_w = np.random.rand(4)
         true_w = true_w/np.linalg.norm(true_w)
+        #target_w=true_w
         t = 1
 
 

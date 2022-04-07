@@ -30,10 +30,5 @@ import copy
 # plt.xlabel('t')
 # plt.ylabel('w0')
 # plt.show()
-estimate_w = [[0]for i in range(10)]
-print(estimate_w)
-for i in range(10):
-    estimate_w[i].append(1)
-
-print(estimate_w)
-print(np.mean(np.array(estimate_w), axis=0))
+display_trajectory_data = np.load('/home/joonhyeok/catkin_ws/src/my_ur5_env/myur5_description/src/sampled_trajectories/planning_trajectory.npz', allow_pickle=True)
+print(len(display_trajectory_data['plan']))

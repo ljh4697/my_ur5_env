@@ -31,7 +31,7 @@ def main():
     env, grasp_point, approach_direction, objects_co, neutral_position = create_environment(planning_scene_1)
 
 
-    for i in trange(200):
+    for i in trange(5000):
         feature_map = get_feature_map.get_feature(objects_co=objects_co, planning_trajectory=planning_trajectory['plan'][i])
         if i % 2 == 0:
             PHI_A.append(feature_map)
