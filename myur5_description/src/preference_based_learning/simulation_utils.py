@@ -17,7 +17,7 @@ import algos
 
 
 
-
+## automatically update by calculating distance from true_w
 def get_feedback(psi, true_w):
      
     s = 0
@@ -25,13 +25,13 @@ def get_feedback(psi, true_w):
         
         
         if np.dot(psi, true_w)>0:
-            s = 1
+            s =1
         else:
             s =-1
 
     return psi, s
 
-
+# update by user's online feedback
 def get_user_feedback(psi, idx, objects_co):
     
 

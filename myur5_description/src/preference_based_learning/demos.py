@@ -29,20 +29,41 @@ def adversarial_batch(method, N, M, b):
     
     
     
-    e = 15
+    e = 1
     
     def get_target_w(true_w, t):
         n_w = copy.deepcopy(true_w)
         
-        n_w[0] -= (1/t)*np.sin(t)
-        n_w[1] -= (2/t**2)*np.cos(t)
+        n_w[0] += (1.2/np.sqrt(t))*np.sin(t/4)
+        n_w[1] += (1/np.sqrt(t))*np.sin(t/3)
+        
+        #n_w[1] -= (2/t)*np.cos(t)
         #n_w[2] += (1/t)*np.sin(t)
         #n_w[3] += (3/t)*np.cos(t)
         
         n_w = n_w/np.linalg.norm(n_w)
         return n_w
         
-    
+        
+    def change_w_element(true_w):
+        
+        
+        n_w = copy.deepcopy(true_w)
+        
+        max_id = np.argmax(n_w)
+        min_id = np.argmin(n_w)
+        
+        
+        
+        max_v = n_w[max_id]
+        min_v = n_w[min_id]
+        
+        n_w[max_id] = min_v
+        n_w[min_id] = max_v
+        
+        
+        return n_w
+
     
     
     if N % b != 0:
@@ -53,12 +74,24 @@ def adversarial_batch(method, N, M, b):
     data_psi_set = data['PSI_SET']
 
     estimate_w = [[0]for i in range(e)]
+    
+
+
+
+
+
 
     for ite in range(e):
+        target_w0 = []
+        target_w1 = []
+        target_w2 = []
+        target_w3 = []
         
         
         true_w = np.random.rand(4)
         true_w = true_w/np.linalg.norm(true_w)
+        
+        target_w = change_w_element(true_w)
         #target_w=true_w
         t = 1
 
@@ -75,14 +108,20 @@ def adversarial_batch(method, N, M, b):
         
         psi_set = []
         s_set = []
-        
+         
         
         
         init_psi_id = np.random.randint(1, 100, b)
         
         for j in range(b):
             # get_feedback : phi, psi, user's feedback 값을 구함
-            target_w = get_target_w(true_w, t)
+            #target_w = get_target_w(true_w, t)
+            target_w0.append(target_w[0])
+            target_w1.append(target_w[1])
+            target_w2.append(target_w[2])
+            target_w3.append(target_w[3])
+            
+            
             psi, s = get_feedback(data_psi_set[init_psi_id[j]], target_w)
 
             psi_set.append(psi)
@@ -97,6 +136,8 @@ def adversarial_batch(method, N, M, b):
             w_sampler.y = np.array(s_set).reshape(-1,1)
             w_samples = w_sampler.sample(M)
             
+            if i == N/2:
+                target_w = change_w_element(target_w)
             #sampled w visualization
             # df = pd.DataFrame(w_samples[:,0])
             # df.plot(kind='density')
@@ -105,7 +146,7 @@ def adversarial_batch(method, N, M, b):
             # plt.show()
         
             
-            print(len(w_samples[:,0]))
+            # print(len(w_samples[:,0])) 1000개 w samping
             #input()
             
             print(f'sample length {len(w_samples)}')
@@ -126,8 +167,13 @@ def adversarial_batch(method, N, M, b):
             # run_algo :
             psi_set_id = run_algo(method, w_samples, b, B)
             for j in range(b):
+        
+                #target_w = get_target_w(true_w, t)
+                target_w0.append(target_w[0])
+                target_w1.append(target_w[1])
+                target_w2.append(target_w[2])
+                target_w3.append(target_w[3])
                 
-                target_w = get_target_w(true_w, t)
                 psi, s = get_feedback(data_psi_set[psi_set_id[j]], target_w)
 
                 psi_set.append(psi)
@@ -144,10 +190,52 @@ def adversarial_batch(method, N, M, b):
         mean_w_samples = np.mean(w_samples, axis=0)
         print('w-estimate = {}'.format(mean_w_samples/np.linalg.norm(mean_w_samples)))
         
-    plt.plot(10*np.arange(len(estimate_w[ite])), np.mean(np.array(estimate_w), axis=0))
-    plt.ylabel('m')
-    plt.xlabel('N')
-    plt.savefig('./outputs/targetw_output.png')
+    
+    fg = plt.figure(figsize=(10,18))
+    
+    evaluate_metric = fg.add_subplot(321)
+    w0 = fg.add_subplot(322)
+    w1 = fg.add_subplot(323)
+    w2 = fg.add_subplot(324)
+    w3 = fg.add_subplot(325)
+    
+    
+    
+    #plt.subplot(2, 2, 1)
+    evaluate_metric.plot(b*np.arange(len(estimate_w[ite])), np.mean(np.array(estimate_w), axis=0))
+    evaluate_metric.set_ylabel('m')
+    evaluate_metric.set_xlabel('N')
+    evaluate_metric.set_title('evaluate metric')
+    
+        
+    w0.plot(np.arange(N), target_w0)
+    w0.plot(np.arange(N), np.ones(N)*true_w[0], 'r--')
+    w0.set_xlabel('N')
+    w0.set_ylabel('w0')
+    w0.set_title('target w0')
+    
+    w1.plot(np.arange(N), target_w1)
+    w1.plot(np.arange(N), np.ones(N)*true_w[1], 'r--')
+    w1.set_xlabel('N')
+    w1.set_ylabel('w1')
+    w1.set_title('target w1')
+
+    w2.plot(np.arange(N), target_w2)
+    w2.plot(np.arange(N), np.ones(N)*true_w[2], 'r--')
+    w2.set_xlabel('N')
+    w2.set_ylabel('w2')
+    w2.set_title('target w2')
+    
+    w3.plot(np.arange(N), target_w3)
+    w3.plot(np.arange(N), np.ones(N)*true_w[3], 'r--')
+    w3.set_xlabel('N')
+    w3.set_ylabel('w3')
+    w3.set_title('target w3')
+    
+
+    target_w1
+    
+    plt.savefig('./outputs/targetw_output_ch_2.png')
     plt.show()
     
 
@@ -201,7 +289,9 @@ def batch(method, N, M, b):
         # plt.xlim([-1,1])
         # plt.ylim([0,2])
         # plt.show()
-    
+
+        
+            
         
         print(len(w_samples[:,0]))
         #input()
