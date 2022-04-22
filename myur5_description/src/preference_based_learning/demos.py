@@ -25,46 +25,237 @@ lower_input_bound = -3.14
 upper_input_bound = 3.14
 d = 4 # num_of_features
 
-def adversarial_batch(method, N, M, b):
+
+def get_target_w(true_w, t):
+    n_w = copy.deepcopy(true_w)
+    
+    n_w[0] += (1.2/np.sqrt(t))*np.sin(t/4)
+    n_w[1] += (1/np.sqrt(t))*np.sin(t/3)
+    
+    #n_w[1] -= (2/t)*np.cos(t)
+    #n_w[2] += (1/t)*np.sin(t)
+    #n_w[3] += (3/t)*np.cos(t)
+    
+    n_w = n_w/np.linalg.norm(n_w)
+    return n_w
+
+
+
+def change_w_element(true_w):
     
     
+    n_w = copy.deepcopy(true_w)
+    
+    max_id = np.argmax(n_w)
+    min_id = np.argmin(n_w)
+    
+    
+    
+    max_v = n_w[max_id]
+    min_v = n_w[min_id]
+    
+    n_w[max_id] = min_v
+    n_w[min_id] = max_v
+    
+    
+    return n_w
+
+
+
+def robust_batch(method, N, M, b):
     
     e = 1
+        
     
-    def get_target_w(true_w, t):
-        n_w = copy.deepcopy(true_w)
-        
-        n_w[0] += (1.2/np.sqrt(t))*np.sin(t/4)
-        n_w[1] += (1/np.sqrt(t))*np.sin(t/3)
-        
-        #n_w[1] -= (2/t)*np.cos(t)
-        #n_w[2] += (1/t)*np.sin(t)
-        #n_w[3] += (3/t)*np.cos(t)
-        
-        n_w = n_w/np.linalg.norm(n_w)
-        return n_w
-        
-        
-    def change_w_element(true_w):
-        
-        
-        n_w = copy.deepcopy(true_w)
-        
-        max_id = np.argmax(n_w)
-        min_id = np.argmin(n_w)
-        
-        
-        
-        max_v = n_w[max_id]
-        min_v = n_w[min_id]
-        
-        n_w[max_id] = min_v
-        n_w[min_id] = max_v
-        
-        
-        return n_w
+    if N % b != 0:
+        print('N must be divisible to b')
+        exit(0)
+    B = 20*b
+    data = np.load('../sampled_trajectories/psi_set.npz')
+    data_psi_set = data['PSI_SET']
 
+
+
+    estimate_w_1 = [[0]for i in range(e)]
+    estimate_w_2 = [[0]for i in range(e)]
     
+    
+
+
+    for ite in range(e):
+        target_w0 = []
+        target_w1 = []
+        target_w2 = []
+        target_w3 = []
+        
+        
+        true_w = np.random.rand(4)
+        true_w = true_w/np.linalg.norm(true_w)
+        
+        target_w = change_w_element(true_w)
+        #target_w=true_w
+        t = 1
+
+
+        w_sampler_1 = Sampler(d)
+        w_sampler_2 = Sampler(d)
+        
+        
+        #sampled w visualization
+        # w_samples = w_sampler.sample(M)
+        # df = pd.DataFrame(w_samples[:,0])
+        # df.plot(kind='density')
+        # plt.xlim([-1,1])
+        # plt.ylim([0,2])
+        # plt.show()
+        
+        psi_set_1 = []
+        s_set_1 = []
+         
+        
+        
+        init_psi_id_1 = np.random.randint(0, len(data_psi_set), b)
+        init_psi_id_2 = np.random.randint(0, len(data_psi_set), b)
+
+        
+        for j in range(b):
+            # get_feedback : phi, psi, user's feedback 값을 구함
+            #target_w = get_target_w(true_w, t)
+            target_w0.append(target_w[0])
+            target_w1.append(target_w[1])
+            target_w2.append(target_w[2])
+            target_w3.append(target_w[3])
+            
+            
+            psi, s = get_feedback(data_psi_set[init_psi_id_1[j]], target_w)
+
+            psi_set_1.append(psi)
+            s_set_1.append(s)
+            t+=1
+        i = b
+        m = 0
+        
+        
+        while i < N:
+            w_sampler_1.A = psi_set_1
+            w_sampler_1.y = np.array(s_set_1).reshape(-1,1)
+            w_samples_1 = w_sampler_1.sample(M)
+            
+            if i%(N/5)==0:
+                target_w = change_w_element(target_w)
+            if i==4*(N/5):
+                target_w = change_w_element(target_w)
+            #sampled w visualization
+            # df = pd.DataFrame(w_samples[:,0])
+            # df.plot(kind='density')
+            # plt.xlim([-1,1])
+            # plt.ylim([0,2])
+            # plt.show()
+        
+            
+            # print(len(w_samples[:,0])) 1000개 w samping
+            #input()
+            
+            print(f'sample length {len(w_samples_1)}')
+            print(f'1st w sample {w_samples_1[0]}')
+            
+            
+            mean_w_samples = np.mean(w_samples_1,axis=0)
+            current_w = mean_w_samples/np.linalg.norm(mean_w_samples)
+            
+            m = np.dot(current_w, true_w)/(np.linalg.norm(current_w)*np.linalg.norm(true_w))
+            estimate_w_1[ite].append(m)
+            
+            
+            print('evaluate metric : {}'.format(m))
+            print('w-estimate = {}'.format(current_w))
+            print('Samples so far: ' + str(i))
+            
+            # run_algo :
+            psi_set_id = run_algo(method, w_samples_1, b, B)
+            for j in range(b):
+        
+                #target_w = get_target_w(true_w, t)
+                target_w0.append(target_w[0])
+                target_w1.append(target_w[1])
+                target_w2.append(target_w[2])
+                target_w3.append(target_w[3])
+                
+                psi, s = get_feedback(data_psi_set[psi_set_id[j]], target_w)
+
+                psi_set_1.append(psi)
+                s_set_1.append(s)
+                
+                t+=1
+                
+                
+            i += b
+            
+        w_sampler_1.A = psi_set_1
+        w_sampler_1.y = np.array(s_set_1).reshape(-1,1)
+        w_samples_1 = w_sampler_1.sample(M)
+        mean_w_samples = np.mean(w_samples_1, axis=0)
+        print('w-estimate = {}'.format(mean_w_samples/np.linalg.norm(mean_w_samples)))
+        
+    
+    
+    
+    
+    
+    # plot graph
+        
+    
+    fg = plt.figure(figsize=(10,15))
+    
+    evaluate_metric = fg.add_subplot(321)
+    w0 = fg.add_subplot(322)
+    w1 = fg.add_subplot(323)
+    w2 = fg.add_subplot(324)
+    w3 = fg.add_subplot(325)
+    
+    
+    
+    #plt.subplot(2, 2, 1)
+    evaluate_metric.plot(b*np.arange(len(estimate_w_1[ite])), np.mean(np.array(estimate_w_1), axis=0))
+    evaluate_metric.set_ylabel('m')
+    evaluate_metric.set_xlabel('N')
+    evaluate_metric.set_title('evaluate metric')
+    
+        
+    w0.plot(np.arange(N), target_w0)
+    w0.plot(np.arange(N), np.ones(N)*true_w[0], 'r--')
+    w0.set_xlabel('N')
+    w0.set_ylabel('w0')
+    w0.set_title('target w0')
+    
+    w1.plot(np.arange(N), target_w1)
+    w1.plot(np.arange(N), np.ones(N)*true_w[1], 'r--')
+    w1.set_xlabel('N')
+    w1.set_ylabel('w1')
+    w1.set_title('target w1')
+
+    w2.plot(np.arange(N), target_w2)
+    w2.plot(np.arange(N), np.ones(N)*true_w[2], 'r--')
+    w2.set_xlabel('N')
+    w2.set_ylabel('w2')
+    w2.set_title('target w2')
+    
+    w3.plot(np.arange(N), target_w3)
+    w3.plot(np.arange(N), np.ones(N)*true_w[3], 'r--')
+    w3.set_xlabel('N')
+    w3.set_ylabel('w3')
+    w3.set_title('target w3')
+
+    target_w1
+    
+    plt.savefig('./outputs/time_varying_w_output_1.png')
+    plt.show()
+    
+    
+def batch(method, N, M, b):
+    
+    e = 1
+        
     
     if N % b != 0:
         print('N must be divisible to b')
@@ -75,10 +266,6 @@ def adversarial_batch(method, N, M, b):
 
     estimate_w = [[0]for i in range(e)]
     
-
-
-
-
 
 
     for ite in range(e):
@@ -136,7 +323,7 @@ def adversarial_batch(method, N, M, b):
             w_sampler.y = np.array(s_set).reshape(-1,1)
             w_samples = w_sampler.sample(M)
             
-            if i == N/2:
+            if i%(N/4)==0:
                 target_w = change_w_element(target_w)
             #sampled w visualization
             # df = pd.DataFrame(w_samples[:,0])
@@ -191,7 +378,7 @@ def adversarial_batch(method, N, M, b):
         print('w-estimate = {}'.format(mean_w_samples/np.linalg.norm(mean_w_samples)))
         
     
-    fg = plt.figure(figsize=(10,18))
+    fg = plt.figure(figsize=(10,15))
     
     evaluate_metric = fg.add_subplot(321)
     w0 = fg.add_subplot(322)
@@ -231,11 +418,10 @@ def adversarial_batch(method, N, M, b):
     w3.set_xlabel('N')
     w3.set_ylabel('w3')
     w3.set_title('target w3')
-    
 
     target_w1
     
-    plt.savefig('./outputs/targetw_output_ch_2.png')
+    plt.savefig('./outputs/time_varying_w_output_1.png')
     plt.show()
     
 
