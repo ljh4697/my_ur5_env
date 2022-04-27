@@ -14,10 +14,40 @@ import algos
 
 
 
+def compute_entropy(p):
+    return np.sum(-p*np.log(p))/2
+    
+    
+
+
+
+
 
 
 
 ## automatically update by calculating distance from true_w
+def predict_feedback(psi_set, current_w):
+    feedback_entropy_set = []
+    s_set = []
+    for psi in psi_set:
+        s = 0
+        feedback_probability = np.zeros(2)
+        feedback_probability[0] = 1/(1+np.exp(-1*np.dot(psi, current_w)))
+        feedback_probability[1] = 1 - feedback_probability[0]
+        while s==0:
+            
+            
+            if np.dot(psi, current_w)>0:
+                s =1
+            else:
+                s =-1
+        feedback_entropy_set.append(compute_entropy(feedback_probability))
+        s_set.append(s)
+    return feedback_entropy_set, s_set
+
+
+
+
 def get_feedback(psi, true_w):
      
     s = 0
@@ -34,9 +64,6 @@ def get_feedback(psi, true_w):
 # update by user's online feedback
 def get_user_feedback(psi, idx, objects_co):
     
-
-
-
 
 
 
@@ -118,6 +145,8 @@ def get_user_feedback(psi, idx, objects_co):
             s = -1
 
     return psi, s
+
+
 
 
 

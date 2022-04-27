@@ -64,6 +64,25 @@ def select_top_candidates(w_samples, B):
     # f_values = f_values[id_input[0:B]]
     return id_input[0:B], psi_set
 
+def re_select_top_candidates(ids, w_samples, B):
+    #d = simulation_object.num_of_features
+    #z = simulation_object.feed_size
+    d = 4
+    B = int(B/2)
+    
+    # inputs_set = np.zeros(shape=(0,2*z))
+    psi_set = np.zeros(shape=(0,d))
+    f_values = np.zeros(shape=(0))
+    data = np.load('../sampled_trajectories/psi_set.npz')
+    # inputs_set = data['inputs_set']
+    psi_set = data['PSI_SET'][ids]
+    f_values = func_psi(psi_set, w_samples)
+    id_input = np.argsort(f_values)
+    # inputs_set = inputs_set[id_input[0:B]]
+    psi_set = psi_set[id_input[0:B]]
+    # f_values = f_values[id_input[0:B]]
+    return id_input[0:B], psi_set
+
 def greedy(w_samples, b):
     id_input, psi_set= select_top_candidates(w_samples, b)
     return id_input

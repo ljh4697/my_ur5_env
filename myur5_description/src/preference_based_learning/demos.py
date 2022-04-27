@@ -1,7 +1,7 @@
 from sampling import Sampler
 import algos
 import numpy as np
-from simulation_utils import get_feedback, run_algo, get_user_feedback
+from simulation_utils import get_feedback, run_algo, get_user_feedback, predict_feedback
 import sys
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -64,18 +64,18 @@ def change_w_element(true_w):
 
 def robust_batch(method, N, M, b):
     
-    e = 1
+    e = 5
         
     
     if N % b != 0:
-        print('N must be divisible to b')
-        exit(0)
+       print('N must be divisible to b')
+       exit(0)
     B = 20*b
     data = np.load('../sampled_trajectories/psi_set.npz')
     data_psi_set = data['PSI_SET']
 
 
-
+    estimate_w = [[0]for i in range(e)]
     estimate_w_1 = [[0]for i in range(e)]
     estimate_w_2 = [[0]for i in range(e)]
     
@@ -96,7 +96,7 @@ def robust_batch(method, N, M, b):
         #target_w=true_w
         t = 1
 
-
+        w_sampler = Sampler(d)
         w_sampler_1 = Sampler(d)
         w_sampler_2 = Sampler(d)
         
@@ -108,14 +108,20 @@ def robust_batch(method, N, M, b):
         # plt.xlim([-1,1])
         # plt.ylim([0,2])
         # plt.show()
-        
+        psi_set = []
         psi_set_1 = []
+        psi_set_2 = []
+        
+        s_set = []
         s_set_1 = []
+        s_set_2 = []
+        
          
         
-        
-        init_psi_id_1 = np.random.randint(0, len(data_psi_set), b)
-        init_psi_id_2 = np.random.randint(0, len(data_psi_set), b)
+        #initialize
+        init_psi_id = np.random.randint(0, len(data_psi_set), b)
+        init_psi_id_1 = np.random.randint(0, len(data_psi_set), int(b/2))
+        init_psi_id_2 = np.random.randint(0, len(data_psi_set), int(b/2))
 
         
         for j in range(b):
@@ -126,25 +132,48 @@ def robust_batch(method, N, M, b):
             target_w2.append(target_w[2])
             target_w3.append(target_w[3])
             
-            
-            psi, s = get_feedback(data_psi_set[init_psi_id_1[j]], target_w)
+            psi, s = get_feedback(data_psi_set[init_psi_id[j]], target_w)
+            psi_set.append(psi)
+            s_set.append(s)
 
-            psi_set_1.append(psi)
-            s_set_1.append(s)
+            
+            if j<b/2:
+                psi_1, s_1 = get_feedback(data_psi_set[init_psi_id_2[j]], target_w)
+                psi_2, s_2 = get_feedback(data_psi_set[init_psi_id_1[j]], target_w)
+
+                psi_set_1.append(psi_1)
+                s_set_1.append(s_1)
+                
+                psi_set_2.append(psi_2)
+                s_set_2.append(s_2)
+            
+
             t+=1
         i = b
         m = 0
         
         
         while i < N:
+            w_sampler.A = psi_set
+            w_sampler.y = np.array(s_set).reshape(-1,1)
+            w_samples = w_sampler.sample(M)
+            
             w_sampler_1.A = psi_set_1
             w_sampler_1.y = np.array(s_set_1).reshape(-1,1)
             w_samples_1 = w_sampler_1.sample(M)
             
-            if i%(N/5)==0:
+            w_sampler_2.A = psi_set_2
+            w_sampler_2.y = np.array(s_set_2).reshape(-1,1)
+            w_samples_2 = w_sampler_2.sample(M)
+            
+            if i%(50)==0:
                 target_w = change_w_element(target_w)
-            if i==4*(N/5):
-                target_w = change_w_element(target_w)
+            # if i%(N/5)==0:
+            #     target_w = change_w_element(target_w)
+            # if i==4*(N/5):
+            #     target_w = change_w_element(target_w)
+            
+            
             #sampled w visualization
             # df = pd.DataFrame(w_samples[:,0])
             # df.plot(kind='density')
@@ -159,20 +188,43 @@ def robust_batch(method, N, M, b):
             print(f'sample length {len(w_samples_1)}')
             print(f'1st w sample {w_samples_1[0]}')
             
+            mean_w_samples = np.mean(w_samples,axis=0)
+            mean_w_samples_1 = np.mean(w_samples_1,axis=0)
+            mean_w_samples_2 = np.mean(w_samples_2,axis=0)
             
-            mean_w_samples = np.mean(w_samples_1,axis=0)
             current_w = mean_w_samples/np.linalg.norm(mean_w_samples)
+            current_w_1 = mean_w_samples_1/np.linalg.norm(mean_w_samples_1)
+            current_w_2 = mean_w_samples_2/np.linalg.norm(mean_w_samples_2)
             
             m = np.dot(current_w, true_w)/(np.linalg.norm(current_w)*np.linalg.norm(true_w))
-            estimate_w_1[ite].append(m)
+            m_1 = np.dot(current_w_1, true_w)/(np.linalg.norm(current_w_1)*np.linalg.norm(true_w))
+            m_2 = np.dot(current_w_2, true_w)/(np.linalg.norm(current_w_2)*np.linalg.norm(true_w))
             
             
-            print('evaluate metric : {}'.format(m))
-            print('w-estimate = {}'.format(current_w))
+            
+            estimate_w[ite].append(m)
+            estimate_w_1[ite].append(m_1)
+            estimate_w_2[ite].append(m_2)
+
+            
+            
+            print('evaluate metric : {}'.format(m_1))
+            print('w-estimate = {}'.format(current_w_1))
             print('Samples so far: ' + str(i))
             
+            
+            
             # run_algo :
-            psi_set_id = run_algo(method, w_samples_1, b, B)
+            psi_set_id = run_algo(method, w_samples, b, B)
+            psi_set_id_1 = run_algo(method, w_samples_1, b, B)
+            psi_set_id_2 = run_algo(method, w_samples_2, b, B)
+            
+            # 1, 2 에서 각각 다시 따로 active removal
+            # psi_set_id_1_prime, _ =algos.re_select_top_candidates(psi_set_id_2, w_samples_1, b)
+            # psi_set_id_2_prime, _ =algos.re_select_top_candidates(psi_set_id_1, w_samples_2, b)
+            psi_set_id_1_prime, _ =algos.re_select_top_candidates(psi_set_id_1, w_samples_1, b)
+            psi_set_id_2_prime, _ =algos.re_select_top_candidates(psi_set_id_2, w_samples_2, b)
+            
             for j in range(b):
         
                 #target_w = get_target_w(true_w, t)
@@ -182,20 +234,56 @@ def robust_batch(method, N, M, b):
                 target_w3.append(target_w[3])
                 
                 psi, s = get_feedback(data_psi_set[psi_set_id[j]], target_w)
-
-                psi_set_1.append(psi)
-                s_set_1.append(s)
+                psi_set.append(psi)
+                s_set.append(s)
                 
+                if j<b/2:
+                    psi_1, s_1 = get_feedback(data_psi_set[psi_set_id_2_prime[j]], target_w)
+                    psi_2, s_2 = get_feedback(data_psi_set[psi_set_id_1_prime[j]], target_w)
+
+                    psi_set_1.append(psi_1)
+                    s_set_1.append(s_1)
+                    
+                    psi_set_2.append(psi_2)
+                    s_set_2.append(s_2)
+                    
                 t+=1
                 
                 
             i += b
             
+            
+            
+        w_sampler.A = psi_set
+        w_sampler.y = np.array(s_set).reshape(-1,1)
+        w_samples = w_sampler.sample(M)
+            
         w_sampler_1.A = psi_set_1
         w_sampler_1.y = np.array(s_set_1).reshape(-1,1)
         w_samples_1 = w_sampler_1.sample(M)
-        mean_w_samples = np.mean(w_samples_1, axis=0)
-        print('w-estimate = {}'.format(mean_w_samples/np.linalg.norm(mean_w_samples)))
+        
+        w_sampler_2.A = psi_set_2
+        w_sampler_2.y = np.array(s_set_2).reshape(-1,1)
+        w_samples_2 = w_sampler_2.sample(M)
+
+
+        mean_w_samples = np.mean(w_samples,axis=0)
+        mean_w_samples_1 = np.mean(w_samples_1,axis=0)
+        mean_w_samples_2 = np.mean(w_samples_2,axis=0)
+        
+        current_w = mean_w_samples/np.linalg.norm(mean_w_samples)
+        current_w_1 = mean_w_samples_1/np.linalg.norm(mean_w_samples_1)
+        current_w_2 = mean_w_samples_2/np.linalg.norm(mean_w_samples_2)
+        
+        m = np.dot(current_w, true_w)/(np.linalg.norm(current_w)*np.linalg.norm(true_w))
+        m_1 = np.dot(current_w_1, true_w)/(np.linalg.norm(current_w_1)*np.linalg.norm(true_w))
+        m_2 = np.dot(current_w_2, true_w)/(np.linalg.norm(current_w_2)*np.linalg.norm(true_w))
+        
+        
+        
+        estimate_w[ite].append(m)
+        estimate_w_1[ite].append(m_1)
+        estimate_w_2[ite].append(m_2)
         
     
     
@@ -216,10 +304,14 @@ def robust_batch(method, N, M, b):
     
     
     #plt.subplot(2, 2, 1)
-    evaluate_metric.plot(b*np.arange(len(estimate_w_1[ite])), np.mean(np.array(estimate_w_1), axis=0))
+    evaluate_metric.plot(b*np.arange(len(estimate_w[ite])), np.mean(np.array(estimate_w), axis=0), color='violet', label='base')
+    evaluate_metric.plot(b*np.arange(len(estimate_w_1[ite])), np.mean(np.array(estimate_w_1), axis=0), color='green', label='model1')
+    evaluate_metric.plot(b*np.arange(len(estimate_w_1[ite])), np.mean(np.array(estimate_w_2), axis=0), color='orange', label='model2')
     evaluate_metric.set_ylabel('m')
     evaluate_metric.set_xlabel('N')
     evaluate_metric.set_title('evaluate metric')
+    evaluate_metric.legend()
+    
     
         
     w0.plot(np.arange(N), target_w0)
@@ -248,7 +340,7 @@ def robust_batch(method, N, M, b):
 
     target_w1
     
-    plt.savefig('./outputs/time_varying_w_output_1.png')
+    plt.savefig('./outputs/robust_time_varying_w_output_1.png')
     plt.show()
     
     
@@ -278,12 +370,13 @@ def batch(method, N, M, b):
         true_w = np.random.rand(4)
         true_w = true_w/np.linalg.norm(true_w)
         
-        target_w = change_w_element(true_w)
-        #target_w=true_w
+        target_w=true_w
         t = 1
 
 
         w_sampler = Sampler(d)
+        w_samples = w_sampler.sample(M)
+        mean_w_samples = np.mean(w_samples,axis=0)
         
         #sampled w visualization
         # w_samples = w_sampler.sample(M)
@@ -295,10 +388,13 @@ def batch(method, N, M, b):
         
         psi_set = []
         s_set = []
-         
+        predicted_s_set = []
+        feedback_entropy_arxive = []
         
         
-        init_psi_id = np.random.randint(1, 100, b)
+        
+        
+        init_psi_id = np.random.randint(0, len(data_psi_set), b)
         
         for j in range(b):
             # get_feedback : phi, psi, user's feedback 값을 구함
@@ -310,10 +406,18 @@ def batch(method, N, M, b):
             
             
             psi, s = get_feedback(data_psi_set[init_psi_id[j]], target_w)
-
+            
+            
             psi_set.append(psi)
             s_set.append(s)
+            
             t+=1
+            
+        feedback_entropy, predicted_s= predict_feedback(psi_set, mean_w_samples)
+        
+        
+        feedback_entropy_arxive.append(feedback_entropy)
+        predicted_s_set.append(predicted_s)
         i = b
         m = 0
         
@@ -323,12 +427,11 @@ def batch(method, N, M, b):
             w_sampler.y = np.array(s_set).reshape(-1,1)
             w_samples = w_sampler.sample(M)
             
-            if i%(N/4)==0:
-                target_w = change_w_element(target_w)
+
             #sampled w visualization
             # df = pd.DataFrame(w_samples[:,0])
             # df.plot(kind='density')
-            # plt.xlim([-1,1])
+            # plt.xlim([-1,1])  
             # plt.ylim([0,2])
             # plt.show()
         
@@ -336,8 +439,8 @@ def batch(method, N, M, b):
             # print(len(w_samples[:,0])) 1000개 w samping
             #input()
             
-            print(f'sample length {len(w_samples)}')
-            print(f'1st w sample {w_samples[0]}')
+            #print(f'sample length {len(w_samples)}')
+            #print(f'1st w sample {w_samples[0]}')
             
             
             mean_w_samples = np.mean(w_samples,axis=0)
@@ -347,8 +450,8 @@ def batch(method, N, M, b):
             estimate_w[ite].append(m)
             
             
-            print('evaluate metric : {}'.format(m))
-            print('w-estimate = {}'.format(current_w))
+            #print('evaluate metric : {}'.format(m))
+            #print('w-estimate = {}'.format(current_w))
             print('Samples so far: ' + str(i))
             
             # run_algo :
@@ -366,7 +469,13 @@ def batch(method, N, M, b):
                 psi_set.append(psi)
                 s_set.append(s)
                 
+                
                 t+=1
+                
+            feedback_entropy, predicted_s= predict_feedback(psi_set, mean_w_samples)
+            
+            feedback_entropy_arxive.append(feedback_entropy)
+            predicted_s_set.append(predicted_s)
                 
                 
             i += b
@@ -374,8 +483,41 @@ def batch(method, N, M, b):
         w_sampler.A = psi_set
         w_sampler.y = np.array(s_set).reshape(-1,1)
         w_samples = w_sampler.sample(M)
-        mean_w_samples = np.mean(w_samples, axis=0)
-        print('w-estimate = {}'.format(mean_w_samples/np.linalg.norm(mean_w_samples)))
+        
+        mean_w_samples = np.mean(w_samples,axis=0)
+        current_w = mean_w_samples/np.linalg.norm(mean_w_samples)
+        
+        m = np.dot(current_w, true_w)/(np.linalg.norm(current_w)*np.linalg.norm(true_w))
+        estimate_w[ite].append(m)
+        #print('w-estimate = {}'.format(mean_w_samples/np.linalg.norm(mean_w_samples)))
+        print('Samples so far: ' + str(i))
+        
+        
+    correct_label_set = []
+    correct_ratio_ = []
+    chaged_label = []
+    argmax_entropy = []
+    
+    # predict label 과 ground truth label 이 같으면 1 아니면 -1
+    for p_s_set in predicted_s_set:
+        correct_label_set.append(list(map(lambda x,y:x*y, p_s_set,s_set[:len(p_s_set)])))
+        
+    
+    # iteration 별로 predict 와 groun truth 의 비율 계산
+    for correct_label in correct_label_set:
+        correct_ratio_.append(correct_label.count(1)/(len(correct_label)))
+        chaged_label.append(np.where(np.array(correct_label) == -1))
+    
+    #entropy 가 가장 높은 2개 query의 argument
+    for x in feedback_entropy_arxive:
+        argmax_entropy.append(np.argsort(-x)[:2])
+        
+        
+    print(correct_label_set)
+    print(argmax_entropy)
+    print(chaged_label)
+    
+    
         
     
     fg = plt.figure(figsize=(10,15))
@@ -385,6 +527,8 @@ def batch(method, N, M, b):
     w1 = fg.add_subplot(323)
     w2 = fg.add_subplot(324)
     w3 = fg.add_subplot(325)
+    correct_ratio = fg.add_subplot(326)
+
     
     
     
@@ -418,16 +562,21 @@ def batch(method, N, M, b):
     w3.set_xlabel('N')
     w3.set_ylabel('w3')
     w3.set_title('target w3')
-
-    target_w1
     
-    plt.savefig('./outputs/time_varying_w_output_1.png')
+    correct_ratio.plot(np.arange(len(correct_ratio_)), correct_ratio_)
+    correct_ratio.set_xlabel('N')
+    correct_ratio.set_ylabel('correct ratio')
+    correct_ratio.set_title('tcorrect_ratio')
+
+    
+    
+    plt.savefig('./outputs/stationary_w_output_2.png')
     plt.show()
     
 
 
 
-def batch(method, N, M, b):
+def o_batch(method, N, M, b):
     
     if N % b != 0:
         print('N must be divisible to b')
