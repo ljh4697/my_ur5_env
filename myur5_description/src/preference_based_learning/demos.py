@@ -370,7 +370,8 @@ def batch(method, N, M, b):
         true_w = np.random.rand(4)
         true_w = true_w/np.linalg.norm(true_w)
         
-        target_w=true_w
+        #target_w=true_w
+        target_w = change_w_element(true_w)
         t = 1
 
 
@@ -389,6 +390,7 @@ def batch(method, N, M, b):
         psi_set = []
         s_set = []
         predicted_s_set = []
+        groundtruth_s_set = []
         feedback_entropy_arxive = []
         
         
@@ -413,11 +415,9 @@ def batch(method, N, M, b):
             
             t+=1
             
-        feedback_entropy, predicted_s= predict_feedback(psi_set, mean_w_samples)
+
         
         
-        feedback_entropy_arxive.append(feedback_entropy)
-        predicted_s_set.append(predicted_s)
         i = b
         m = 0
         
@@ -427,6 +427,16 @@ def batch(method, N, M, b):
             w_sampler.y = np.array(s_set).reshape(-1,1)
             w_samples = w_sampler.sample(M)
             
+            mean_w_samples = np.mean(w_samples,axis=0)
+            current_w = mean_w_samples/np.linalg.norm(mean_w_samples)
+            
+            m = np.dot(current_w, true_w)/(np.linalg.norm(current_w)*np.linalg.norm(true_w))
+            estimate_w[ite].append(m)
+            
+            feedback_entropy, predicted_s= predict_feedback(psi_set, mean_w_samples)
+            
+            feedback_entropy_arxive.append(feedback_entropy)
+            predicted_s_set.append(predicted_s)
 
             #sampled w visualization
             # df = pd.DataFrame(w_samples[:,0])
@@ -442,12 +452,10 @@ def batch(method, N, M, b):
             #print(f'sample length {len(w_samples)}')
             #print(f'1st w sample {w_samples[0]}')
             
-            
-            mean_w_samples = np.mean(w_samples,axis=0)
-            current_w = mean_w_samples/np.linalg.norm(mean_w_samples)
-            
-            m = np.dot(current_w, true_w)/(np.linalg.norm(current_w)*np.linalg.norm(true_w))
-            estimate_w[ite].append(m)
+            if i%(50)==0:
+                target_w = change_w_element(target_w)
+                
+
             
             
             #print('evaluate metric : {}'.format(m))
@@ -472,50 +480,81 @@ def batch(method, N, M, b):
                 
                 t+=1
                 
-            feedback_entropy, predicted_s= predict_feedback(psi_set, mean_w_samples)
+
             
-            feedback_entropy_arxive.append(feedback_entropy)
-            predicted_s_set.append(predicted_s)
                 
                 
             i += b
+        
+        
+        # w* 의 ground truth label 계산
+        _, groundtruth_s_set = predict_feedback(psi_set, true_w)
+            
             
         w_sampler.A = psi_set
         w_sampler.y = np.array(s_set).reshape(-1,1)
         w_samples = w_sampler.sample(M)
         
+        
+        
         mean_w_samples = np.mean(w_samples,axis=0)
         current_w = mean_w_samples/np.linalg.norm(mean_w_samples)
         
+        feedback_entropy, predicted_s= predict_feedback(psi_set, mean_w_samples)
+        
+        
+        feedback_entropy_arxive.append(feedback_entropy)
+        predicted_s_set.append(predicted_s)
+        
+
         m = np.dot(current_w, true_w)/(np.linalg.norm(current_w)*np.linalg.norm(true_w))
         estimate_w[ite].append(m)
         #print('w-estimate = {}'.format(mean_w_samples/np.linalg.norm(mean_w_samples)))
         print('Samples so far: ' + str(i))
         
         
-    correct_label_set = []
+    p_t_label_set = []
+    
     correct_ratio_ = []
-    chaged_label = []
+    wrong_label = []
+    diff_p_t_label = []
     argmax_entropy = []
     
-    # predict label 과 ground truth label 이 같으면 1 아니면 -1
+    # target label vs groundtruth label
+    
+    # predict label 과 target label
+    
+    # predict label 과 target label 이 같으면 1 아니면 -1
     for p_s_set in predicted_s_set:
-        correct_label_set.append(list(map(lambda x,y:x*y, p_s_set,s_set[:len(p_s_set)])))
+        p_t_label_set.append(list(map(lambda x,y:x*y, p_s_set,s_set[:len(p_s_set)])))
         
+    t_correct_label_set = np.array(groundtruth_s_set) * np.array(s_set)
+    
+    # target != ground truth 인 label (training시 잘 못 labeling 해준 것.)
+    wrong_label = np.where(np.array(t_correct_label_set) == -1)
+    
     
     # iteration 별로 predict 와 groun truth 의 비율 계산
-    for correct_label in correct_label_set:
+    for correct_label in p_t_label_set:
         correct_ratio_.append(correct_label.count(1)/(len(correct_label)))
-        chaged_label.append(np.where(np.array(correct_label) == -1))
+        diff_p_t_label.append(np.where(np.array(correct_label)==-1))
     
     #entropy 가 가장 높은 2개 query의 argument
     for x in feedback_entropy_arxive:
-        argmax_entropy.append(np.argsort(-x)[:2])
+        argmax_entropy.append(np.argsort(-np.array(x))[:2])
         
-        
-    print(correct_label_set)
+    
+    print(p_t_label_set)
+    print('############')
+    print(t_correct_label_set)
+    print('#################')
+    print(diff_p_t_label)
+    print('##################')
+    print(wrong_label)
+    print('##################')
     print(argmax_entropy)
-    print(chaged_label)
+    
+    #print(feedback_entropy_arxive)
     
     
         
@@ -563,7 +602,7 @@ def batch(method, N, M, b):
     w3.set_ylabel('w3')
     w3.set_title('target w3')
     
-    correct_ratio.plot(np.arange(len(correct_ratio_)), correct_ratio_)
+    correct_ratio.plot(10+b*np.arange(len(correct_ratio_)), correct_ratio_)
     correct_ratio.set_xlabel('N')
     correct_ratio.set_ylabel('correct ratio')
     correct_ratio.set_title('tcorrect_ratio')
