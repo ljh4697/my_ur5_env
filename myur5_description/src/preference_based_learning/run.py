@@ -13,9 +13,9 @@ elif method == 'greedy' or method == 'medoids' or method == 'boundary_medoids' o
 elif method == 'user_greedy':
     b = int(sys.argv[4])
     demos.user_batch(method, N, M, b)
-elif method == "robust":
+elif method == "coteaching":
     b = int(sys.argv[4])
-    demos.robust_batch('greedy', N, M, b)
+    demos.coteaching_batch('greedy', N, M, b)
 else:
     print('There is no method called ' + method)
 

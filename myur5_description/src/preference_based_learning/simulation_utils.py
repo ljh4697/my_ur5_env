@@ -166,6 +166,8 @@ def run_algo(method, w_samples, b=10, B=200):
         return algos.successive_elimination(w_samples, b, B)
     elif method == 'random':
         return algos.random(w_samples)
+    elif method == "optimal":
+        return algos.optimal_greedy(w_samples, b)
     else:
         print('There is no method called ' + method)
         exit(0)

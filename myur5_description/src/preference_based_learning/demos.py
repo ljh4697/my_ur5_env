@@ -62,9 +62,9 @@ def change_w_element(true_w):
 
 
 
-def robust_batch(method, N, M, b):
+def coteaching_batch(method, N, M, b):
     
-    e = 5
+    e = 1
         
     
     if N % b != 0:
@@ -79,6 +79,7 @@ def robust_batch(method, N, M, b):
     estimate_w_1 = [[0]for i in range(e)]
     estimate_w_2 = [[0]for i in range(e)]
     
+
     
 
 
@@ -116,13 +117,20 @@ def robust_batch(method, N, M, b):
         s_set_1 = []
         s_set_2 = []
         
-         
+        selected_ids = []
+        selected_ids_1 = []
+        selected_ids_2 = []
         
         #initialize
         init_psi_id = np.random.randint(0, len(data_psi_set), b)
         init_psi_id_1 = np.random.randint(0, len(data_psi_set), int(b/2))
         init_psi_id_2 = np.random.randint(0, len(data_psi_set), int(b/2))
 
+
+        selected_ids.append(init_psi_id)
+        selected_ids_1.append(init_psi_id_1)
+        selected_ids_2.append(init_psi_id_2)
+        
         
         for j in range(b):
             # get_feedback : phi, psi, user's feedback 값을 구함
@@ -166,12 +174,12 @@ def robust_batch(method, N, M, b):
             w_sampler_2.y = np.array(s_set_2).reshape(-1,1)
             w_samples_2 = w_sampler_2.sample(M)
             
-            if i%(50)==0:
+            # if i%(50)==0:
+            #   target_w = change_w_element(target_w)
+            if i%(60)==0:
                 target_w = change_w_element(target_w)
-            # if i%(N/5)==0:
-            #     target_w = change_w_element(target_w)
-            # if i==4*(N/5):
-            #     target_w = change_w_element(target_w)
+            if i%240==0:
+                target_w = change_w_element(target_w)
             
             
             #sampled w visualization
@@ -216,15 +224,20 @@ def robust_batch(method, N, M, b):
             
             # run_algo :
             psi_set_id = run_algo(method, w_samples, b, B)
-            psi_set_id_1 = run_algo(method, w_samples_1, b, B)
-            psi_set_id_2 = run_algo(method, w_samples_2, b, B)
+            psi_set_id_1 = run_algo(method, w_samples_1, int(b/2), B)
+            psi_set_id_2 = run_algo(method, w_samples_2, int(b/2), B)
             
+            psi_set_id_1_o = run_algo("optimal", w_samples_1, 2, B)
+            psi_set_id_2_o = run_algo("optimal", w_samples_2, 2, B)
+            
+            print(f'optimal1' + f"{psi_set_id_1_o}")
             # 1, 2 에서 각각 다시 따로 active removal
-            # psi_set_id_1_prime, _ =algos.re_select_top_candidates(psi_set_id_2, w_samples_1, b)
-            # psi_set_id_2_prime, _ =algos.re_select_top_candidates(psi_set_id_1, w_samples_2, b)
-            psi_set_id_1_prime, _ =algos.re_select_top_candidates(psi_set_id_1, w_samples_1, b)
-            psi_set_id_2_prime, _ =algos.re_select_top_candidates(psi_set_id_2, w_samples_2, b)
-            
+ 
+
+            selected_ids.append(psi_set_id)
+            selected_ids_1.append(psi_set_id_1)
+            selected_ids_2.append(psi_set_id_2)
+
             for j in range(b):
         
                 #target_w = get_target_w(true_w, t)
@@ -238,8 +251,8 @@ def robust_batch(method, N, M, b):
                 s_set.append(s)
                 
                 if j<b/2:
-                    psi_1, s_1 = get_feedback(data_psi_set[psi_set_id_2_prime[j]], target_w)
-                    psi_2, s_2 = get_feedback(data_psi_set[psi_set_id_1_prime[j]], target_w)
+                    psi_1, s_1 = get_feedback(data_psi_set[psi_set_id_2[j]], target_w)
+                    psi_2, s_2 = get_feedback(data_psi_set[psi_set_id_1[j]], target_w)
 
                     psi_set_1.append(psi_1)
                     s_set_1.append(s_1)
@@ -285,9 +298,48 @@ def robust_batch(method, N, M, b):
         estimate_w_1[ite].append(m_1)
         estimate_w_2[ite].append(m_2)
         
+        
+        print(selected_ids)
+        print(selected_ids_1)
+        print(selected_ids_2)
+        
+        count_query = {}
+        count_query_1 = {}
+        count_query_2 = {}
+        
+        for ids in selected_ids:
+            for id in ids:
+                if id not in count_query:
+                    count_query[id] = 1
+                else:
+                    count_query[id]+=1
+                    
+        for ids in selected_ids_1:
+            for id in ids:
+                if id not in count_query_1:
+                    count_query_1[id] = 1
+                else:
+                    count_query_1[id]+=1
+                    
+        for ids in selected_ids_2:
+            for id in ids:
+                if id not in count_query_2:
+                    count_query_2[id] = 1
+                else:
+                    count_query_2[id]+=1
+        
+        
+        
     
+    fg_0 = plt.figure(figsize=(5,15))
     
+    c = fg_0.add_subplot(311)
+    c1 = fg_0.add_subplot(312)
+    c2 = fg_0.add_subplot(313)
     
+    c.bar(count_query.keys(), count_query.values())
+    c1.bar(count_query_1.keys(), count_query_1.values())
+    c2.bar(count_query_2.keys(), count_query_2.values())
     
     
     # plot graph
@@ -345,6 +397,7 @@ def robust_batch(method, N, M, b):
     
     
 def batch(method, N, M, b):
+    # stack_batch_active
     
     e = 1
         
@@ -357,7 +410,7 @@ def batch(method, N, M, b):
     data_psi_set = data['PSI_SET']
 
     estimate_w = [[0]for i in range(e)]
-    
+    stack_estimate_w = [[0]for i in range(e)]
 
 
     for ite in range(e):
@@ -379,6 +432,8 @@ def batch(method, N, M, b):
         w_samples = w_sampler.sample(M)
         mean_w_samples = np.mean(w_samples,axis=0)
         
+        stack_W_sampler = Sampler(d)
+        
         #sampled w visualization
         # w_samples = w_sampler.sample(M)
         # df = pd.DataFrame(w_samples[:,0])
@@ -388,11 +443,16 @@ def batch(method, N, M, b):
         # plt.show()
         
         psi_set = []
+        stack_psi_set = []
+        
         s_set = []
+        stack_s_set = []
+        
         predicted_s_set = []
         groundtruth_s_set = []
         feedback_entropy_arxive = []
         
+        stack = {}
         
         
         
@@ -413,6 +473,10 @@ def batch(method, N, M, b):
             psi_set.append(psi)
             s_set.append(s)
             
+            stack_psi_set.append(psi)
+            stack_s_set.append(s)
+            
+            
             t+=1
             
 
@@ -423,20 +487,45 @@ def batch(method, N, M, b):
         
         
         while i < N:
+            
             w_sampler.A = psi_set
             w_sampler.y = np.array(s_set).reshape(-1,1)
             w_samples = w_sampler.sample(M)
-            
             mean_w_samples = np.mean(w_samples,axis=0)
             current_w = mean_w_samples/np.linalg.norm(mean_w_samples)
-            
             m = np.dot(current_w, true_w)/(np.linalg.norm(current_w)*np.linalg.norm(true_w))
             estimate_w[ite].append(m)
             
-            feedback_entropy, predicted_s= predict_feedback(psi_set, mean_w_samples)
+            
+            stack_W_sampler.A = stack_psi_set
+            stack_W_sampler.y = np.array(stack_s_set).reshape(-1,1)
+            stack_w_samples = stack_W_sampler.sample(M)
+            
+            stack_mean_w_samples = np.mean(stack_w_samples,axis=0)
+            stack_current_w = stack_mean_w_samples/np.linalg.norm(stack_mean_w_samples)
+            
+            stack_m = np.dot(stack_current_w, true_w)/(np.linalg.norm(stack_current_w)*np.linalg.norm(stack_current_w))
+            stack_estimate_w[ite].append(stack_m)
+            
+            feedback_entropy, predicted_s= predict_feedback(stack_psi_set, stack_mean_w_samples)
+            
+            
+            # predicted label != target label 인경우 stack+1, stack이 s넘으면 pseudo label로 교체
+            for idx in np.where(np.array(stack_s_set)*np.array(predicted_s)==-1)[0]:
+                if not idx in stack:
+                    stack[idx]=1
+                else:
+                    stack[idx]+=1
+                    if stack[idx]>=int(N/b):
+                        stack_s_set[idx] = predicted_s[idx]
+                            
+                        
+                        
             
             feedback_entropy_arxive.append(feedback_entropy)
             predicted_s_set.append(predicted_s)
+
+
 
             #sampled w visualization
             # df = pd.DataFrame(w_samples[:,0])
@@ -454,6 +543,8 @@ def batch(method, N, M, b):
             
             if i%(50)==0:
                 target_w = change_w_element(target_w)
+            if i%200==0:
+                target_w = change_w_element(target_w)
                 
 
             
@@ -464,6 +555,8 @@ def batch(method, N, M, b):
             
             # run_algo :
             psi_set_id = run_algo(method, w_samples, b, B)
+            stack_psi_set_id = run_algo(method, stack_w_samples, b, B)
+            
             for j in range(b):
         
                 #target_w = get_target_w(true_w, t)
@@ -476,7 +569,11 @@ def batch(method, N, M, b):
 
                 psi_set.append(psi)
                 s_set.append(s)
-                
+
+                stack_psi, stack_s = get_feedback(data_psi_set[stack_psi_set_id[j]], target_w)
+
+                stack_psi_set.append(stack_psi)
+                stack_s_set.append(stack_s)
                 
                 t+=1
                 
@@ -495,20 +592,34 @@ def batch(method, N, M, b):
         w_sampler.y = np.array(s_set).reshape(-1,1)
         w_samples = w_sampler.sample(M)
         
-        
-        
         mean_w_samples = np.mean(w_samples,axis=0)
         current_w = mean_w_samples/np.linalg.norm(mean_w_samples)
         
-        feedback_entropy, predicted_s= predict_feedback(psi_set, mean_w_samples)
+        m = np.dot(current_w, true_w)/(np.linalg.norm(current_w)*np.linalg.norm(true_w))
+        estimate_w[ite].append(m)
         
+        
+        stack_W_sampler.A = stack_psi_set
+        stack_W_sampler.y = np.array(stack_s_set).reshape(-1,1)
+        stack_w_samples = stack_W_sampler.sample(M)
+        
+        stack_mean_w_samples = np.mean(stack_w_samples,axis=0)
+        stack_current_w = stack_mean_w_samples/np.linalg.norm(stack_mean_w_samples)
+        
+        stack_m = np.dot(stack_current_w, true_w)/(np.linalg.norm(stack_current_w)*np.linalg.norm(stack_current_w))
+        stack_estimate_w[ite].append(stack_m)
+        
+        
+        
+        feedback_entropy, predicted_s= predict_feedback(stack_psi_set, stack_mean_w_samples)
         
         feedback_entropy_arxive.append(feedback_entropy)
         predicted_s_set.append(predicted_s)
+
+        
         
 
-        m = np.dot(current_w, true_w)/(np.linalg.norm(current_w)*np.linalg.norm(true_w))
-        estimate_w[ite].append(m)
+
         #print('w-estimate = {}'.format(mean_w_samples/np.linalg.norm(mean_w_samples)))
         print('Samples so far: ' + str(i))
         
@@ -519,6 +630,10 @@ def batch(method, N, M, b):
     wrong_label = []
     diff_p_t_label = []
     argmax_entropy = []
+    count_stack = {}
+    
+    # target label을 predict label 로 대체했을 때 true label과 일치율
+    correct_change_ratio = []
     
     # target label vs groundtruth label
     
@@ -531,31 +646,53 @@ def batch(method, N, M, b):
     t_correct_label_set = np.array(groundtruth_s_set) * np.array(s_set)
     
     # target != ground truth 인 label (training시 잘 못 labeling 해준 것.)
-    wrong_label = np.where(np.array(t_correct_label_set) == -1)
+    wrong_label = np.where(np.array(t_correct_label_set) == -1)[0]
     
     
-    # iteration 별로 predict 와 groun truth 의 비율 계산
+    # iteration 별로 predicted != target 인 label
     for correct_label in p_t_label_set:
         correct_ratio_.append(correct_label.count(1)/(len(correct_label)))
+        # 매 iter 별로 corre
         diff_p_t_label.append(np.where(np.array(correct_label)==-1))
+        print(np.where(np.array(correct_label)==-1)[0])
+        for idx in np.where(np.array(correct_label)==-1)[0]:
+            if not idx in count_stack:
+                count_stack[idx]=1
+            else:
+                count_stack[idx]+=1
+            
     
     #entropy 가 가장 높은 2개 query의 argument
     for x in feedback_entropy_arxive:
         argmax_entropy.append(np.argsort(-np.array(x))[:2])
         
     
-    print(p_t_label_set)
-    print('############')
-    print(t_correct_label_set)
+    #print(p_t_label_set)
+    #print('############')
+    #print(t_correct_label_set)
     print('#################')
     print(diff_p_t_label)
     print('##################')
     print(wrong_label)
     print('##################')
-    print(argmax_entropy)
+    print(count_stack)
     
     #print(feedback_entropy_arxive)
+    x=np.arange(len(count_stack))
     
+    val = []
+    colors = []
+    for s in sorted(count_stack.keys()):
+       val.append(count_stack[s]) 
+       if s in wrong_label:
+           colors.append('r')
+       else:
+           colors.append('b')
+           
+    
+    plt.bar(x, val, color=colors)
+    plt.xticks(x, sorted(count_stack.keys()))
+    plt.show()
     
         
     
@@ -572,10 +709,12 @@ def batch(method, N, M, b):
     
     
     #plt.subplot(2, 2, 1)
-    evaluate_metric.plot(b*np.arange(len(estimate_w[ite])), np.mean(np.array(estimate_w), axis=0))
+    evaluate_metric.plot(b*np.arange(len(estimate_w[ite])), np.mean(np.array(estimate_w), axis=0), color='violet', label='base')
+    evaluate_metric.plot(b*np.arange(len(stack_estimate_w[ite])), np.mean(np.array(stack_estimate_w), axis=0), color='orange', label='stack')
     evaluate_metric.set_ylabel('m')
     evaluate_metric.set_xlabel('N')
     evaluate_metric.set_title('evaluate metric')
+    evaluate_metric.legend()
     
         
     w0.plot(np.arange(N), target_w0)

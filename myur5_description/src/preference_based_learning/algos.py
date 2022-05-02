@@ -11,6 +11,16 @@ def func_psi(psi_set, w_samples):
     f = -np.minimum(term1,term2)
     return f
 
+def rewards_psi(psi_set, w_samples):
+    y = psi_set.dot(w_samples.T)
+    
+    r = np.abs(np.sum(y, axis=1))
+    
+    return r
+    
+
+
+
 def generate_psi(simulation_object, inputs_set):
     z = simulation_object.feed_size
     inputs_set = np.array(inputs_set)
@@ -64,24 +74,23 @@ def select_top_candidates(w_samples, B):
     # f_values = f_values[id_input[0:B]]
     return id_input[0:B], psi_set
 
-def re_select_top_candidates(ids, w_samples, B):
-    #d = simulation_object.num_of_features
-    #z = simulation_object.feed_size
+def select_optimal_candidates(w_samples, B):
     d = 4
-    B = int(B/2)
     
-    # inputs_set = np.zeros(shape=(0,2*z))
     psi_set = np.zeros(shape=(0,d))
-    f_values = np.zeros(shape=(0))
+    r_gap = np.zeros(shape=(0))
     data = np.load('../sampled_trajectories/psi_set.npz')
-    # inputs_set = data['inputs_set']
-    psi_set = data['PSI_SET'][ids]
-    f_values = func_psi(psi_set, w_samples)
-    id_input = np.argsort(f_values)
-    # inputs_set = inputs_set[id_input[0:B]]
+    psi_set = data['PSI_SET']
+    r_gap = rewards_psi(psi_set, w_samples)
+    id_input = np.argsort(-r_gap)
     psi_set = psi_set[id_input[0:B]]
-    # f_values = f_values[id_input[0:B]]
     return id_input[0:B], psi_set
+
+
+def optimal_greedy(w_samples, b):
+    id_input, psi_set= select_optimal_candidates(w_samples, b)
+    return id_input
+
 
 def greedy(w_samples, b):
     id_input, psi_set= select_top_candidates(w_samples, b)

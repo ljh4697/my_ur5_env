@@ -1,7 +1,9 @@
 import numpy as np
 
+a = {}
 
-aa = np.arange(10)
-b = [1,2]
-c = [12]
-b.append(c)
+a = np.array([3, 13, -4])
+b = np.array([2, 15])
+
+
+print(np.abs(a))
