@@ -11,6 +11,9 @@ from test_mesh_pickandplace import create_environment
 import control_planning_scene
 import scipy.optimize as opt
 import algos
+import bench_algos
+from models import Driver, LunarLander, MountainCar, Swimmer, Tosser
+
 
 
 
@@ -47,6 +50,43 @@ def predict_feedback(psi_set, current_w):
 
 
 
+def bench_get_feedback(simulation_object, input_A, input_B, true_w):
+     
+
+    
+    simulation_object.feed(input_A)
+    phi_A = simulation_object.get_features()
+    simulation_object.feed(input_B)
+    phi_B = simulation_object.get_features()
+    psi = np.array(phi_A) - np.array(phi_B)
+    s = 0
+    while s==0:
+        
+        
+        if np.dot(psi, true_w)>0:
+            s = 1
+        else:
+            s =-1
+        # selection = input('A/B to watch, 1/2 to vote: ').lower()
+        
+        
+        
+        
+        
+        # if selection == 'a':
+        #     simulation_object.feed(input_A)
+        #     simulation_object.watch(1)
+        # elif selection == 'b':
+        #     simulation_object.feed(input_B)
+        #     simulation_object.watch(1)
+        # elif selection == '1':
+        #     s = 1
+        # elif selection == '2':
+        #     s = -1
+    return psi, s
+
+
+
 
 def get_feedback(psi, true_w):
      
@@ -60,6 +100,9 @@ def get_feedback(psi, true_w):
             s =-1
 
     return psi, s
+
+
+
 
 # update by user's online feedback
 def get_user_feedback(psi, idx, objects_co):
@@ -148,7 +191,20 @@ def get_user_feedback(psi, idx, objects_co):
 
 
 
-
+def create_env(task):
+    if task == 'driver':
+        return Driver()
+    elif task == 'lunarlander':
+        return LunarLander()
+    elif task == 'mountaincar':
+        return MountainCar()
+    elif task == 'swimmer':
+        return Swimmer()
+    elif task == 'tosser':
+        return Tosser()
+    else:
+        print('There is no task called ' + task)
+        exit(0)
 
 
 
@@ -171,6 +227,25 @@ def run_algo(method, w_samples, b=10, B=200):
     else:
         print('There is no method called ' + method)
         exit(0)
+
+def bench_run_algo(method, simulation_object, w_samples, b=10, B=200):
+    if method == 'nonbatch':
+        return bench_algos.nonbatch(simulation_object, w_samples)
+    if method == 'greedy':
+        return bench_algos.greedy(simulation_object, w_samples, b)
+    elif method == 'medoids':
+        return bench_algos.medoids(simulation_object, w_samples, b, B)
+    elif method == 'boundary_medoids':
+        return bench_algos.boundary_medoids(simulation_object, w_samples, b, B)
+    elif method == 'successive_elimination':
+        return bench_algos.successive_elimination(simulation_object, w_samples, b, B)
+    elif method == 'random':
+        return bench_algos.random(simulation_object, w_samples)
+    else:
+        print('There is no method called ' + method)
+        exit(0)
+
+
 
 
 def func(ctrl_array, *args):

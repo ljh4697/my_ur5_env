@@ -64,7 +64,7 @@ def change_w_element(true_w):
 
 def coteaching_batch(method, N, M, b):
     
-    e = 1
+    e = 2
         
     
     if N % b != 0:
@@ -174,12 +174,12 @@ def coteaching_batch(method, N, M, b):
             w_sampler_2.y = np.array(s_set_2).reshape(-1,1)
             w_samples_2 = w_sampler_2.sample(M)
             
-            # if i%(50)==0:
-            #   target_w = change_w_element(target_w)
-            if i%(60)==0:
-                target_w = change_w_element(target_w)
-            if i%240==0:
-                target_w = change_w_element(target_w)
+            if i%(50)==0:
+              target_w = change_w_element(target_w)
+            # if i%(60)==0:
+            #     target_w = change_w_element(target_w)
+            # if i%240==0:
+            #     target_w = change_w_element(target_w)
             
             
             #sampled w visualization
@@ -224,13 +224,13 @@ def coteaching_batch(method, N, M, b):
             
             # run_algo :
             psi_set_id = run_algo(method, w_samples, b, B)
-            psi_set_id_1 = run_algo(method, w_samples_1, int(b/2), B)
-            psi_set_id_2 = run_algo(method, w_samples_2, int(b/2), B)
+            psi_set_id_1 = run_algo("optimal", w_samples_1, int(b/2), B)
+            psi_set_id_2 = run_algo("optimal", w_samples_2, int(b/2), B)
             
-            psi_set_id_1_o = run_algo("optimal", w_samples_1, 2, B)
-            psi_set_id_2_o = run_algo("optimal", w_samples_2, 2, B)
+            # psi_set_id_1_o = run_algo("optimal", w_samples_1, 2, B)
+            # psi_set_id_2_o = run_algo("optimal", w_samples_2, 2, B)
             
-            print(f'optimal1' + f"{psi_set_id_1_o}")
+            #print(f'optimal1' + f"{psi_set_id_1_o}")
             # 1, 2 에서 각각 다시 따로 active removal
  
 
@@ -251,6 +251,22 @@ def coteaching_batch(method, N, M, b):
                 s_set.append(s)
                 
                 if j<b/2:
+                    
+                    # if j<len(psi_set_id_1_o):
+                    #     print("update low entropy")
+                        
+                    #     psi_1_o, s_1_o = get_feedback(data_psi_set[psi_set_id_2_o[j]], target_w)
+                    #     psi_2_o, s_2_o = get_feedback(data_psi_set[psi_set_id_1_o[j]], target_w)
+
+                    #     psi_set_1.append(psi_1_o)
+                    #     s_set_1.append(s_1_o)
+                        
+                    #     psi_set_2.append(psi_2_o)
+                    #     s_set_2.append(s_2_o)
+                    
+                    
+                    
+                    
                     psi_1, s_1 = get_feedback(data_psi_set[psi_set_id_2[j]], target_w)
                     psi_2, s_2 = get_feedback(data_psi_set[psi_set_id_1[j]], target_w)
 

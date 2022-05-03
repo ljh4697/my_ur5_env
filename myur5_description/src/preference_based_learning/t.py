@@ -2,8 +2,9 @@ import numpy as np
 
 a = {}
 
-a = np.array([3, 13, -4])
-b = np.array([2, 15])
+a = np.arange(10, 20)
+b = np.arange(30, 40)
 
 
-print(np.abs(a))
+c = np.concatenate((a[:5], b[:5]))
+print(c)
