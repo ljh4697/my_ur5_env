@@ -19,7 +19,7 @@ def kMedoids(D, k, tmax=100):
     rs = rs[index_shuf]
     cs = cs[index_shuf]
     for r,c in zip(rs,cs):
-        # if there are two points with a distance of 0...
+        # if there are two points with a distance o+f 0...
         # keep the first one for cluster init
         if r < c and r not in invalid_medoid_inds:
             invalid_medoid_inds.add(c)

@@ -74,21 +74,38 @@ def select_top_candidates(w_samples, B):
     # f_values = f_values[id_input[0:B]]
     return id_input[0:B], psi_set
 
-def select_optimal_candidates(w_samples, B):
+
+# reward gap 이 적으면 entropy 가 높은 쿼리
+def select_optimal_candidates(w_samples, B, i, N):
     d = 4
+    
+    
     
     psi_set = np.zeros(shape=(0,d))
     r_gap = np.zeros(shape=(0))
     data = np.load('../sampled_trajectories/psi_set.npz')
     psi_set = data['PSI_SET']
+    
+    Traj_size = len(psi_set)
+    alpha = int(N/B)
+    
+    
     r_gap = rewards_psi(psi_set, w_samples)
+    
+    
     id_input = np.argsort(-r_gap)
-    psi_set = psi_set[id_input[0:B]]
-    return id_input[0:B], psi_set
+    
+    candidates = np.arange((i+1)*(Traj_size/alpha)-B,(i+1)*(Traj_size/alpha), dtype=np.int64)
+    print(candidates)
+    #np.random.randint(i*(Traj_size/alpha), (i+1)*(Traj_size/alpha), B)
+    
+    psi_set = psi_set[id_input[candidates]]
+    
+    return id_input[candidates], psi_set
 
 
-def optimal_greedy(w_samples, b):
-    id_input, psi_set= select_optimal_candidates(w_samples, b)
+def optimal_greedy(w_samples, b, i, N):
+    id_input, psi_set= select_optimal_candidates(w_samples, b, i, N)
     return id_input
 
 

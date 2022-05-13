@@ -1,10 +1,12 @@
 import numpy as np
-
-a = {}
-
-a = np.arange(10, 20)
-b = np.arange(30, 40)
+import matplotlib.pyplot as plt
+import copy
 
 
-c = np.concatenate((a[:5], b[:5]))
-print(c)
+
+a = [1, 2, 3]
+b=  [3, 5]
+
+a.extend(b)
+
+print(a)

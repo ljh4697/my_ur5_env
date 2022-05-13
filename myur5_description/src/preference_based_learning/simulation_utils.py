@@ -88,18 +88,39 @@ def bench_get_feedback(simulation_object, input_A, input_B, true_w):
 
 
 
-def get_feedback(psi, true_w):
+def get_feedback(psi, w, true_w):
      
     s = 0
+    t_s = 0
+    
+    #probability model feedback
+    f_w = 1/(1+np.exp(-np.dot(psi, w)))
+    p_psi = [f_w, (1-f_w)]
+    label = np.random.choice(2, 1, p=p_psi)
+    
     while s==0:
         
-        
-        if np.dot(psi, true_w)>0:
+        # oracle feedback
+        # if np.dot(psi, w)>0:
+        #     s = 1
+        # else:
+        #     s =-1 
+            
+        # probability model feedback
+        if label==0:
             s =1
         else:
             s =-1
+        
+    while t_s==0:
+        
+        # oracle feedback
+        if np.dot(psi, true_w)>0:
+            t_s = 1
+        else:
+            t_s =-1 
 
-    return psi, s
+    return psi, s, t_s
 
 
 
@@ -136,7 +157,7 @@ def get_user_feedback(psi, idx, objects_co):
     while s==0:
 
 
-        selection = input('A/B to watch, 1/2 to vote: ').lower()
+        selection = input('A/B to watch, 1/2 to vote, q to quit: ').lower()
 
         if selection == 'a':
 
@@ -186,6 +207,8 @@ def get_user_feedback(psi, idx, objects_co):
             s = 1
         elif selection == '2':
             s = -1
+        elif selection == 'q':
+            exit()
 
     return psi, s
 
@@ -227,6 +250,8 @@ def run_algo(method, w_samples, b=10, B=200):
     else:
         print('There is no method called ' + method)
         exit(0)
+        
+        
 
 def bench_run_algo(method, simulation_object, w_samples, b=10, B=200):
     if method == 'nonbatch':

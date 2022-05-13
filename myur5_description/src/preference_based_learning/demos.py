@@ -14,6 +14,7 @@ import scipy.optimize as opt
 import algos
 from scipy.stats import kde
 import pandas as pd
+import copy
 
 #true_w = [0.29754784,0.03725074,0.00664673,0.80602143]
 true_w = np.random.rand(4)
@@ -24,6 +25,14 @@ estimate_w = [0]
 lower_input_bound = -3.14
 upper_input_bound = 3.14
 d = 4 # num_of_features
+
+
+def get_entropy(y, p):
+    return -y*np.log(p)-(1-y)*np.log(1-p)
+
+
+
+
 
 
 def get_target_w(true_w, t):
@@ -64,7 +73,7 @@ def change_w_element(true_w):
 
 def coteaching_batch(method, N, M, b):
     
-    e = 2
+    e = 1
         
     
     if N % b != 0:
@@ -75,6 +84,7 @@ def coteaching_batch(method, N, M, b):
     data_psi_set = data['PSI_SET']
 
 
+    estimate_w_o = [[0]for i in range(e)]
     estimate_w = [[0]for i in range(e)]
     estimate_w_1 = [[0]for i in range(e)]
     estimate_w_2 = [[0]for i in range(e)]
@@ -98,6 +108,7 @@ def coteaching_batch(method, N, M, b):
         t = 1
 
         w_sampler = Sampler(d)
+        oracle_w_sampler = copy.deepcopy(w_sampler)
         w_sampler_1 = Sampler(d)
         w_sampler_2 = Sampler(d)
         
@@ -109,13 +120,22 @@ def coteaching_batch(method, N, M, b):
         # plt.xlim([-1,1])
         # plt.ylim([0,2])
         # plt.show()
+        
+        oracle_psi_set = []
         psi_set = []
         psi_set_1 = []
         psi_set_2 = []
         
+        
+        oracle_s_set = []
         s_set = []
         s_set_1 = []
         s_set_2 = []
+        
+        t_s_set = []
+        t_s_set_1 = []
+        t_s_set_2 = []
+        
         
         selected_ids = []
         selected_ids_1 = []
@@ -123,9 +143,10 @@ def coteaching_batch(method, N, M, b):
         
         #initialize
         init_psi_id = np.random.randint(0, len(data_psi_set), b)
+        o_init_psi_id = init_psi_id
+    
         init_psi_id_1 = np.random.randint(0, len(data_psi_set), int(b/2))
         init_psi_id_2 = np.random.randint(0, len(data_psi_set), int(b/2))
-
 
         selected_ids.append(init_psi_id)
         selected_ids_1.append(init_psi_id_1)
@@ -140,20 +161,29 @@ def coteaching_batch(method, N, M, b):
             target_w2.append(target_w[2])
             target_w3.append(target_w[3])
             
-            psi, s = get_feedback(data_psi_set[init_psi_id[j]], target_w)
+            o_psi, _, o_s = get_feedback(data_psi_set[o_init_psi_id[j]], true_w, true_w)
+            psi, s, t_s = get_feedback(data_psi_set[init_psi_id[j]], target_w, true_w)
+            
+            oracle_psi_set.append(o_psi)
+            oracle_s_set.append(o_s)
+            
             psi_set.append(psi)
             s_set.append(s)
+            t_s_set.append(t_s)
 
             
             if j<b/2:
-                psi_1, s_1 = get_feedback(data_psi_set[init_psi_id_2[j]], target_w)
-                psi_2, s_2 = get_feedback(data_psi_set[init_psi_id_1[j]], target_w)
+                psi_1, s_1, t_s_1 = get_feedback(data_psi_set[init_psi_id_2[j]], target_w, true_w)
+                psi_2, s_2, t_s_2 = get_feedback(data_psi_set[init_psi_id_1[j]], target_w, true_w)
 
                 psi_set_1.append(psi_1)
                 s_set_1.append(s_1)
                 
                 psi_set_2.append(psi_2)
                 s_set_2.append(s_2)
+                
+                t_s_set_1.append(t_s_1)
+                t_s_set_2.append(t_s_2)
             
 
             t+=1
@@ -162,6 +192,10 @@ def coteaching_batch(method, N, M, b):
         
         
         while i < N:
+            oracle_w_sampler.A = oracle_psi_set
+            oracle_w_sampler.y = np.array(oracle_s_set).reshape(-1,1)
+            w_samples_o = w_sampler.sample(M)
+            
             w_sampler.A = psi_set
             w_sampler.y = np.array(s_set).reshape(-1,1)
             w_samples = w_sampler.sample(M)
@@ -196,36 +230,46 @@ def coteaching_batch(method, N, M, b):
             print(f'sample length {len(w_samples_1)}')
             print(f'1st w sample {w_samples_1[0]}')
             
+            
+            mean_w_samples_o = np.mean(w_samples_o,axis=0)
             mean_w_samples = np.mean(w_samples,axis=0)
             mean_w_samples_1 = np.mean(w_samples_1,axis=0)
             mean_w_samples_2 = np.mean(w_samples_2,axis=0)
             
+            current_o_w = mean_w_samples_o/np.linalg.norm(mean_w_samples_o)
             current_w = mean_w_samples/np.linalg.norm(mean_w_samples)
             current_w_1 = mean_w_samples_1/np.linalg.norm(mean_w_samples_1)
             current_w_2 = mean_w_samples_2/np.linalg.norm(mean_w_samples_2)
             
+            
+            m_o = np.dot(current_o_w, true_w)/(np.linalg.norm(current_o_w)*np.linalg.norm(true_w))
             m = np.dot(current_w, true_w)/(np.linalg.norm(current_w)*np.linalg.norm(true_w))
             m_1 = np.dot(current_w_1, true_w)/(np.linalg.norm(current_w_1)*np.linalg.norm(true_w))
             m_2 = np.dot(current_w_2, true_w)/(np.linalg.norm(current_w_2)*np.linalg.norm(true_w))
             
             
-            
+            estimate_w_o[ite].append(m_o)
             estimate_w[ite].append(m)
             estimate_w_1[ite].append(m_1)
             estimate_w_2[ite].append(m_2)
 
             
             
-            print('evaluate metric : {}'.format(m_1))
-            print('w-estimate = {}'.format(current_w_1))
+            #print('evaluate metric : {}'.format(m_1))
+            #print('w-estimate = {}'.format(current_w_1))
             print('Samples so far: ' + str(i))
             
             
             
             # run_algo :
+            psi_set_id_o = run_algo(method, w_samples_o, b, B)
             psi_set_id = run_algo(method, w_samples, b, B)
-            psi_set_id_1 = run_algo("optimal", w_samples_1, int(b/2), B)
-            psi_set_id_2 = run_algo("optimal", w_samples_2, int(b/2), B)
+            psi_set_id_1 = run_algo(method, w_samples_1, int(b/2), B)
+            psi_set_id_2 = run_algo(method, w_samples_2, int(b/2), B)
+            
+            #psi_set_id_1 = algos.optimal_greedy(w_samples_1, int(b/2), i/b, N/2)
+            #psi_set_id_2 = algos.optimal_greedy(w_samples_2, int(b/2), i/b, N/2)
+            
             
             # psi_set_id_1_o = run_algo("optimal", w_samples_1, 2, B)
             # psi_set_id_2_o = run_algo("optimal", w_samples_2, 2, B)
@@ -233,7 +277,7 @@ def coteaching_batch(method, N, M, b):
             #print(f'optimal1' + f"{psi_set_id_1_o}")
             # 1, 2 에서 각각 다시 따로 active removal
  
-
+            #selected_ids_o.append(psi_set_id_o)
             selected_ids.append(psi_set_id)
             selected_ids_1.append(psi_set_id_1)
             selected_ids_2.append(psi_set_id_2)
@@ -246,12 +290,40 @@ def coteaching_batch(method, N, M, b):
                 target_w2.append(target_w[2])
                 target_w3.append(target_w[3])
                 
-                psi, s = get_feedback(data_psi_set[psi_set_id[j]], target_w)
+                o_psi, _, o_s = get_feedback(data_psi_set[psi_set_id_o[j]], true_w, true_w)
+                psi, s, t_s = get_feedback(data_psi_set[psi_set_id[j]], target_w, true_w)
+                
+                oracle_psi_set.append(o_psi)
+                oracle_s_set.append(o_s)
+                
                 psi_set.append(psi)
                 s_set.append(s)
+                t_s_set.append(t_s)
+
                 
                 if j<b/2:
+                    psi_1, s_1, t_s_1 = get_feedback(data_psi_set[psi_set_id_2[j]], target_w, true_w)
+                    psi_2, s_2, t_s_2 = get_feedback(data_psi_set[psi_set_id_1[j]], target_w, true_w)
+
+
+
+                    # entropy 계산 추가
+
+
+                    psi_set_1.append(psi_1)
+                    s_set_1.append(s_1)
                     
+                    psi_set_2.append(psi_2)
+                    s_set_2.append(s_2)
+                    
+                    t_s_set_1.append(t_s_1)
+                    t_s_set_2.append(t_s_2)
+                    
+                    
+                    
+                    
+                    
+                        
                     # if j<len(psi_set_id_1_o):
                     #     print("update low entropy")
                         
@@ -264,24 +336,16 @@ def coteaching_batch(method, N, M, b):
                     #     psi_set_2.append(psi_2_o)
                     #     s_set_2.append(s_2_o)
                     
-                    
-                    
-                    
-                    psi_1, s_1 = get_feedback(data_psi_set[psi_set_id_2[j]], target_w)
-                    psi_2, s_2 = get_feedback(data_psi_set[psi_set_id_1[j]], target_w)
 
-                    psi_set_1.append(psi_1)
-                    s_set_1.append(s_1)
-                    
-                    psi_set_2.append(psi_2)
-                    s_set_2.append(s_2)
                     
                 t+=1
                 
                 
             i += b
             
-            
+        oracle_w_sampler.A = oracle_psi_set
+        oracle_w_sampler.y = np.array(oracle_s_set).reshape(-1,1)
+        w_samples_o = w_sampler.sample(M)
             
         w_sampler.A = psi_set
         w_sampler.y = np.array(s_set).reshape(-1,1)
@@ -296,20 +360,23 @@ def coteaching_batch(method, N, M, b):
         w_samples_2 = w_sampler_2.sample(M)
 
 
+        mean_w_samples_o = np.mean(w_samples_o,axis=0)
         mean_w_samples = np.mean(w_samples,axis=0)
         mean_w_samples_1 = np.mean(w_samples_1,axis=0)
         mean_w_samples_2 = np.mean(w_samples_2,axis=0)
         
+        current_w_o = mean_w_samples_o/np.linalg.norm(mean_w_samples_o)
         current_w = mean_w_samples/np.linalg.norm(mean_w_samples)
         current_w_1 = mean_w_samples_1/np.linalg.norm(mean_w_samples_1)
         current_w_2 = mean_w_samples_2/np.linalg.norm(mean_w_samples_2)
         
+        m_o = np.dot(current_w_o, true_w)/(np.linalg.norm(current_w_o)*np.linalg.norm(true_w))
         m = np.dot(current_w, true_w)/(np.linalg.norm(current_w)*np.linalg.norm(true_w))
         m_1 = np.dot(current_w_1, true_w)/(np.linalg.norm(current_w_1)*np.linalg.norm(true_w))
         m_2 = np.dot(current_w_2, true_w)/(np.linalg.norm(current_w_2)*np.linalg.norm(true_w))
         
         
-        
+        estimate_w_o[ite].append(m_o)
         estimate_w[ite].append(m)
         estimate_w_1[ite].append(m_1)
         estimate_w_2[ite].append(m_2)
@@ -318,6 +385,13 @@ def coteaching_batch(method, N, M, b):
         print(selected_ids)
         print(selected_ids_1)
         print(selected_ids_2)
+        
+        print(f"base corruption ratio = {1-(len(np.where(np.array(t_s_set) == np.array(s_set))[0])/len(s_set))}")
+        print(f"model1 corruption ratio = {1-(len(np.where(np.array(t_s_set_1) == np.array(s_set_1))[0])/len(s_set_1))}")
+        print(f"model2 corruption ratio = {1-(len(np.where(np.array(t_s_set_2) == np.array(s_set_2))[0])/len(s_set_2))}")
+        
+        
+        
         
         count_query = {}
         count_query_1 = {}
@@ -372,6 +446,7 @@ def coteaching_batch(method, N, M, b):
     
     
     #plt.subplot(2, 2, 1)
+    evaluate_metric.plot(b*np.arange(len(estimate_w[ite])), np.mean(np.array(estimate_w_o), axis=0), color='blue', label='oracle')
     evaluate_metric.plot(b*np.arange(len(estimate_w[ite])), np.mean(np.array(estimate_w), axis=0), color='violet', label='base')
     evaluate_metric.plot(b*np.arange(len(estimate_w_1[ite])), np.mean(np.array(estimate_w_1), axis=0), color='green', label='model1')
     evaluate_metric.plot(b*np.arange(len(estimate_w_1[ite])), np.mean(np.array(estimate_w_2), axis=0), color='orange', label='model2')
