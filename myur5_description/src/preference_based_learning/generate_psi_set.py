@@ -27,11 +27,12 @@ def main():
     planning_scene_1 = control_planning_scene.control_planning_scene()
     get_feature_map = featuremapping(planning_scene_1)
 
-            
+                                                                                                                                                                               
     env, grasp_point, approach_direction, objects_co, neutral_position = create_environment(planning_scene_1)
 
+    
 
-    for i in trange(5000):
+    for i in trange(len(planning_trajectory['plan'])):
         feature_map = get_feature_map.get_feature(objects_co=objects_co, planning_trajectory=planning_trajectory['plan'][i])
         if i % 2 == 0:
             PHI_A.append(feature_map)
@@ -39,7 +40,11 @@ def main():
             PHI_B.append(feature_map)
 
     PHI_A = np.array(PHI_A)
+    PHI_A = PHI_A/np.max(PHI_A, axis=0) 
     PHI_B = np.array(PHI_B)
+    PHI_B = PHI_B/np.max(PHI_B, axis=0) 
+    
+    
     PSI_SET = PHI_A - PHI_B
 
     #print(feature_map)
@@ -51,7 +56,7 @@ def main():
     print(PHI_B[0])
     print(PSI_SET[0])
     
-    np.savez("../sampled_trajectories/psi_set.npz", PHI_A=PHI_A, PHI_B=PHI_B, PSI_SET=PSI_SET)
+    np.savez("../sampled_trajectories/normalized_psi_set.npz", PHI_A=PHI_A, PHI_B=PHI_B, PSI_SET=PSI_SET)
 
 
 

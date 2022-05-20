@@ -64,7 +64,7 @@ def select_top_candidates(w_samples, B):
     # inputs_set = np.zeros(shape=(0,2*z))
     psi_set = np.zeros(shape=(0,d))
     f_values = np.zeros(shape=(0))
-    data = np.load('../sampled_trajectories/psi_set.npz')
+    data = np.load('../sampled_trajectories/normalized_psi_set.npz')
     # inputs_set = data['inputs_set']
     psi_set = data['PSI_SET']
     f_values = func_psi(psi_set, w_samples)
@@ -76,37 +76,28 @@ def select_top_candidates(w_samples, B):
 
 
 # reward gap 이 적으면 entropy 가 높은 쿼리
-def select_optimal_candidates(w_samples, B, i, N):
-    d = 4
+def select_point_candidates(w_samples, B, psi_set):
+    d = 3
+    
+    f_values = func_psi(psi_set, w_samples)
+    id_input = np.argsort(f_values)
+    # inputs_set = inputs_set[id_input[0:B]]
+    psi_set = psi_set[id_input[0:B]]
     
     
-    
-    psi_set = np.zeros(shape=(0,d))
-    r_gap = np.zeros(shape=(0))
-    data = np.load('../sampled_trajectories/psi_set.npz')
-    psi_set = data['PSI_SET']
-    
-    Traj_size = len(psi_set)
-    alpha = int(N/B)
-    
-    
-    r_gap = rewards_psi(psi_set, w_samples)
-    
-    
-    id_input = np.argsort(-r_gap)
-    
-    candidates = np.arange((i+1)*(Traj_size/alpha)-B,(i+1)*(Traj_size/alpha), dtype=np.int64)
-    print(candidates)
-    #np.random.randint(i*(Traj_size/alpha), (i+1)*(Traj_size/alpha), B)
-    
-    psi_set = psi_set[id_input[candidates]]
-    
-    return id_input[candidates], psi_set
+    return id_input[0:B], psi_set
 
 
-def optimal_greedy(w_samples, b, i, N):
-    id_input, psi_set= select_optimal_candidates(w_samples, b, i, N)
+def point_greedy(w_samples, b, psi_set):
+    id_input, psi_set= select_point_candidates(w_samples, b, psi_set)
     return id_input
+
+def point_medoids(w_samples, b, psi_set, B=150):
+    id_input, psi_set = select_point_candidates(w_samples, B, psi_set)
+
+    D = pairwise_distances(psi_set, metric='euclidean')
+    M, C = kmedoids.kMedoids(D, b)
+    return id_input[M]
 
 
 def greedy(w_samples, b):
@@ -116,30 +107,34 @@ def greedy(w_samples, b):
 
 # sampling 된 trajectory 개수가 200개가 넘지 않아 밑에있는 방법들은 효과적이지 않는 것 같다.
 # 왜냐하면 B만큼의 batch 개를 먼저 뽑는 과정 때문에
-def medoids(w_samples, b, B=200):
+def medoids(w_samples, b, B=150):
     id_input, psi_set = select_top_candidates(w_samples, B)
 
     D = pairwise_distances(psi_set, metric='euclidean')
     M, C = kmedoids.kMedoids(D, b)
-    return M
+    return id_input[M]
 
-def boundary_medoids(simulation_object, w_samples, b, B=200):
+def boundary_medoids(w_samples, b, B=150):
     id_input, psi_set = select_top_candidates(w_samples, B)
-
+    #print(id_input)
     hull = ConvexHull(psi_set)
     simplices = np.unique(hull.simplices)
     boundary_psi = psi_set[simplices]
     D = pairwise_distances(boundary_psi, metric='euclidean')
     M, C = kmedoids.kMedoids(D, b)
     
-    return M
+    return id_input[M]
 
-def successive_elimination(simulation_object, w_samples, b, B=200):
-    inputs_set, psi_set, f_values, d, z = select_top_candidates(w_samples, B)
+def successive_elimination(w_samples, b, B=150):
+    id_input, psi_set = select_top_candidates(w_samples, B)
+    
+    f_values = np.zeros(shape=(0))
+    f_values = func_psi(psi_set, w_samples)
+    
 
     D = pairwise_distances(psi_set, metric='euclidean')
-    D = np.array([np.inf if x==0 else x for x in D.reshape(B*B,1)]).reshape(B,B)
-    while len(inputs_set) > b:
+    D = np.array([np.inf if x==0 else x for x in D.reshape(B*B,1)], dtype=object).reshape(B,B)
+    while len(id_input) > b:
         ij_min = np.where(D == np.min(D))
         if len(ij_min) > 1 and len(ij_min[0]) > 1:
             ij_min = ij_min[0]
@@ -153,9 +148,9 @@ def successive_elimination(simulation_object, w_samples, b, B=200):
         D = np.delete(D, delete_id, axis=0)
         D = np.delete(D, delete_id, axis=1)
         f_values = np.delete(f_values, delete_id)
-        inputs_set = np.delete(inputs_set, delete_id, axis=0)
+        id_input = np.delete(id_input, delete_id, axis=0)
         psi_set = np.delete(psi_set, delete_id, axis=0)
-    return inputs_set[:,0:z], inputs_set[:,z:2*z]
+    return id_input
 
 def random(simulation_object, w_samples):
     lower_input_bound = [x[0] for x in simulation_object.feed_bounds]

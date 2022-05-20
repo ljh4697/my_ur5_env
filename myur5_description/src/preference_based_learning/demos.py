@@ -80,7 +80,7 @@ def coteaching_batch(method, N, M, b):
        print('N must be divisible to b')
        exit(0)
     B = 20*b
-    data = np.load('../sampled_trajectories/psi_set.npz')
+    data = np.load('../sampled_trajectories/normalized_psi_set.npz')
     data_psi_set = data['PSI_SET']
 
 
@@ -194,7 +194,7 @@ def coteaching_batch(method, N, M, b):
         while i < N:
             oracle_w_sampler.A = oracle_psi_set
             oracle_w_sampler.y = np.array(oracle_s_set).reshape(-1,1)
-            w_samples_o = w_sampler.sample(M)
+            w_samples_o = oracle_w_sampler.sample(M)
             
             w_sampler.A = psi_set
             w_sampler.y = np.array(s_set).reshape(-1,1)
@@ -208,7 +208,7 @@ def coteaching_batch(method, N, M, b):
             w_sampler_2.y = np.array(s_set_2).reshape(-1,1)
             w_samples_2 = w_sampler_2.sample(M)
             
-            if i%(50)==0:
+            if i%(60)==0 and i <100:
               target_w = change_w_element(target_w)
             # if i%(60)==0:
             #     target_w = change_w_element(target_w)
@@ -264,8 +264,13 @@ def coteaching_batch(method, N, M, b):
             # run_algo :
             psi_set_id_o = run_algo(method, w_samples_o, b, B)
             psi_set_id = run_algo(method, w_samples, b, B)
-            psi_set_id_1 = run_algo(method, w_samples_1, int(b/2), B)
-            psi_set_id_2 = run_algo(method, w_samples_2, int(b/2), B)
+            
+            if i < N/2:
+                psi_set_id_1 = run_algo('medoids', w_samples_1, int(b/2), B)
+                psi_set_id_2 = run_algo('medoids', w_samples_2, int(b/2), B)
+            else:
+                psi_set_id_1 = run_algo(method, w_samples_1, int(b/2), B)
+                psi_set_id_2 = run_algo(method, w_samples_2, int(b/2), B)
             
             #psi_set_id_1 = algos.optimal_greedy(w_samples_1, int(b/2), i/b, N/2)
             #psi_set_id_2 = algos.optimal_greedy(w_samples_2, int(b/2), i/b, N/2)
@@ -282,6 +287,16 @@ def coteaching_batch(method, N, M, b):
             selected_ids_1.append(psi_set_id_1)
             selected_ids_2.append(psi_set_id_2)
 
+            
+            temp_s_1 = []
+            temp_s_2 = []
+            temp_psi_set_1 = []
+            temp_psi_set_2 = []
+            
+            q_entropy_1 = []
+            q_entropy_2 = []
+            
+            
             for j in range(b):
         
                 #target_w = get_target_w(true_w, t)
@@ -297,27 +312,85 @@ def coteaching_batch(method, N, M, b):
                 oracle_s_set.append(o_s)
                 
                 psi_set.append(psi)
-                s_set.append(s)
+                if i < N/2:
+                    s_set.append(s)
+                else:
+                    s_set.append(t_s)
                 t_s_set.append(t_s)
 
                 
                 if j<b/2:
+                    
                     psi_1, s_1, t_s_1 = get_feedback(data_psi_set[psi_set_id_2[j]], target_w, true_w)
                     psi_2, s_2, t_s_2 = get_feedback(data_psi_set[psi_set_id_1[j]], target_w, true_w)
 
 
 
+                    prob1_1 = 1/(1+(np.exp(-s_1*np.dot(current_w_1, data_psi_set[psi_set_id_2[j]].T))))
+                    prob1_2 = 1/(1+(np.exp(-s_1*np.dot(current_w_2, data_psi_set[psi_set_id_1[j]].T))))
+                    
+                    print(f"distance {np.linalg.norm(current_w_1-current_w_2)}")
+                    #print(f"w2 {current_w_2}")
+                    
+                    # 1 = prefer A, 0 = prefer B
+                    if s_1 == 1:
+                        z_1 = 1
+                    else:
+                        z_1 = 0
+                        
+                    if s_2 == 1:
+                        z_2 = 1
+                    else:
+                        z_2 = 0
+                    
                     # entropy 계산 추가
+                    #print(f"{prob1_1}, {1-prob1_1}")
+                    
 
 
                     psi_set_1.append(psi_1)
-                    s_set_1.append(s_1)
-                    
                     psi_set_2.append(psi_2)
-                    s_set_2.append(s_2)
+                    
+                    if i<N/2:
+                        s_set_1.append(s_1)
+                        s_set_2.append(s_2)
+                    else:
+                        s_set_1.append(t_s_1)
+                        s_set_2.append(t_s_2)
+                        
                     
                     t_s_set_1.append(t_s_1)
                     t_s_set_2.append(t_s_2)
+                    
+                    
+            #         q_entropy_1.append(get_entropy(z_1, prob1_1))
+            #         q_entropy_2.append(get_entropy(z_2, prob1_2))
+                    
+            #         temp_psi_set_1.append(psi_1)
+            #         temp_s_1.append(s_1)
+                    
+            #         temp_psi_set_2.append(psi_2)
+            #         temp_s_2.append(s_2)
+            
+            #     t+=1
+
+            # temp_psi_set_1 = np.delete(np.array(temp_psi_set_1), np.argsort(-np.array(q_entropy_1))[:2], axis=0)
+            # temp_s_1 = np.delete(np.array(temp_s_1), np.argsort(-np.array(q_entropy_1))[:2])
+            # temp_psi_set_2 = np.delete(np.array(temp_psi_set_2), np.argsort(-np.array(q_entropy_2))[:2], axis=0)
+            # temp_s_2 = np.delete(np.array(temp_s_2), np.argsort(-np.array(q_entropy_2))[:2])
+            
+            # print(len(temp_psi_set_1))
+            # psi_set_1.extend(list(temp_psi_set_1))
+            # s_set_1.extend(list(temp_s_1))
+            # print(len(psi_set_1))
+            
+            
+            # psi_set_2.extend(list(temp_psi_set_2))
+            # s_set_2.extend(list(temp_s_2))
+            # print(len(s_set_2))
+                    
+                    #t_s_set_1.append(t_s_1)
+                    #t_s_set_2.append(t_s_2)
                     
                     
                     
@@ -338,14 +411,13 @@ def coteaching_batch(method, N, M, b):
                     
 
                     
-                t+=1
                 
                 
             i += b
             
         oracle_w_sampler.A = oracle_psi_set
         oracle_w_sampler.y = np.array(oracle_s_set).reshape(-1,1)
-        w_samples_o = w_sampler.sample(M)
+        w_samples_o = oracle_w_sampler.sample(M)
             
         w_sampler.A = psi_set
         w_sampler.y = np.array(s_set).reshape(-1,1)
@@ -382,14 +454,15 @@ def coteaching_batch(method, N, M, b):
         estimate_w_2[ite].append(m_2)
         
         
-        print(selected_ids)
-        print(selected_ids_1)
-        print(selected_ids_2)
+        #print(selected_ids)
+        #print(selected_ids_1)
+        #print(selected_ids_2)
         
         print(f"base corruption ratio = {1-(len(np.where(np.array(t_s_set) == np.array(s_set))[0])/len(s_set))}")
         print(f"model1 corruption ratio = {1-(len(np.where(np.array(t_s_set_1) == np.array(s_set_1))[0])/len(s_set_1))}")
         print(f"model2 corruption ratio = {1-(len(np.where(np.array(t_s_set_2) == np.array(s_set_2))[0])/len(s_set_2))}")
         
+        print(len(np.where(np.array(t_s_set) == np.array(s_set))[0]))
         
         
         
@@ -481,8 +554,6 @@ def coteaching_batch(method, N, M, b):
     w3.set_ylabel('w3')
     w3.set_title('target w3')
 
-    target_w1
-    
     plt.savefig('./outputs/robust_time_varying_w_output_1.png')
     plt.show()
     
