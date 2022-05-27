@@ -92,7 +92,7 @@ def point_greedy(w_samples, b, psi_set):
     id_input, psi_set= select_point_candidates(w_samples, b, psi_set)
     return id_input
 
-def point_medoids(w_samples, b, psi_set, B=150):
+def point_medoids(w_samples, b, psi_set, B=120):
     id_input, psi_set = select_point_candidates(w_samples, B, psi_set)
 
     D = pairwise_distances(psi_set, metric='euclidean')

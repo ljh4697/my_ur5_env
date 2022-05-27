@@ -132,10 +132,10 @@ def coteaching_batch():
     
     
     method = 'greedy'
-    N = 100
+    N = 140
     M = 1000
-    b = 10
-    e = 3
+    b = 20
+    e = 1
     
     if N % b != 0:
        print('N must be divisible to b')
@@ -150,7 +150,9 @@ def coteaching_batch():
     estimate_w = [[0]for i in range(e)]
     estimate_w_1 = [[0]for i in range(e)]
     estimate_w_2 = [[0]for i in range(e)]
-    
+    estimate_w_s = [[0]for i in range(e)]
+    corruption_ratio_base = [[0]for i in range(e)]
+    corruption_ratio_robust = [[0]for i in range(e)]
     
     # mesh grid
     X = np.arange(-20, 35, 0.1) # USE THIS VALUE for the range of x values in the construction of coordinate
@@ -173,13 +175,15 @@ def coteaching_batch():
         t = 1
         true_w = np.array([-0.02809329, 0.36071584, -0.4335038 ])
         
+        
         #target_w = change_w_element(true_w)
-        target_w=true_w
+        target_w=np.array([0.04, 0.21584, -0.7835038  ])
 
         w_sampler = Sampler(d)
         oracle_w_sampler = copy.deepcopy(w_sampler)
         #w_sampler_1 = Sampler(d)
         #w_sampler_2 = Sampler(d)
+        w_sampler_s = copy.deepcopy(w_sampler)
         
         
         #sampled w visualization
@@ -194,32 +198,30 @@ def coteaching_batch():
         psi_set = []
         psi_set_1 = []
         psi_set_2 = []
+        psi_set_s = []
         
         
         oracle_s_set = []
         s_set = []
         s_set_1 = []
         s_set_2 = []
+        s_set_s = []
         
         t_s_set = []
         t_s_set_1 = []
         t_s_set_2 = []
+        t_s_set_s = []
         
         
-        selected_ids = []
-        selected_ids_1 = []
-        selected_ids_2 = []
+
         
         #initialize
         init_psi_id = np.random.randint(0, len(data_psi_set), b)
         o_init_psi_id = init_psi_id
+        o_init_psi_id_s = init_psi_id
     
         init_psi_id_1 = np.random.randint(0, len(data_psi_set), int(b/2))
         init_psi_id_2 = np.random.randint(0, len(data_psi_set), int(b/2))
-
-        selected_ids.append(init_psi_id)
-        selected_ids_1.append(init_psi_id_1)
-        selected_ids_2.append(init_psi_id_2)
         
         
         for j in range(b):
@@ -231,6 +233,7 @@ def coteaching_batch():
             
             o_psi, _, o_s = get_feedback(data_psi_set[o_init_psi_id[j]], true_w, true_w)
             psi, s, t_s = get_feedback(data_psi_set[init_psi_id[j]], target_w, true_w)
+            psi_s, s_s, t_s_s = get_feedback(data_psi_set[o_init_psi_id_s[j]], target_w, true_w)
             
             oracle_psi_set.append(o_psi)
             oracle_s_set.append(o_s)
@@ -238,8 +241,10 @@ def coteaching_batch():
             psi_set.append(psi)
             s_set.append(s)
             t_s_set.append(t_s)
+            t_s_set_s.append(t_s_s)
 
-            
+            psi_set_s.append(psi_s)
+            s_set_s.append(s_s)
             # if j<b/2:
             #     psi_1, s_1, t_s_1 = get_feedback(data_psi_set[init_psi_id_2[j]], target_w, true_w)
             #     psi_2, s_2, t_s_2 = get_feedback(data_psi_set[init_psi_id_1[j]], target_w, true_w)
@@ -257,6 +262,8 @@ def coteaching_batch():
             t+=1
         i = b
         m = 0
+        corruption_id_base = []
+        corruption_id_robust = []
         
         
         
@@ -270,7 +277,9 @@ def coteaching_batch():
             w_samples = w_sampler.sample(M)
             
             
-            
+            w_sampler_s.A = psi_set_s
+            w_sampler_s.y = np.array(s_set_s).reshape(-1,1)
+            w_samples_s = w_sampler_s.sample(M)
             
             # w_sampler_1.A = psi_set_1
             # w_sampler_1.y = np.array(s_set_1).reshape(-1,1)
@@ -294,30 +303,36 @@ def coteaching_batch():
             # plt.show()
         
             
-            # print(len(w_samples[:,0])) 1000개 w samping
-            #input()
+            if i%(60)==0 and i <100:
+                target_w = copy.deepcopy(true_w)
+                
+
             
-            
+            print(f"target_w {target_w}")
             
             mean_w_samples_o = np.mean(w_samples_o,axis=0)
             mean_w_samples = np.mean(w_samples,axis=0)
             # mean_w_samples_1 = np.mean(w_samples_1,axis=0)
             # mean_w_samples_2 = np.mean(w_samples_2,axis=0)
+            mean_w_samples_s = np.mean(w_samples_s,axis=0)
             
             current_o_w = mean_w_samples_o/np.linalg.norm(mean_w_samples_o)
             current_w = mean_w_samples/np.linalg.norm(mean_w_samples)
             # current_w_1 = mean_w_samples_1/np.linalg.norm(mean_w_samples_1)
             # current_w_2 = mean_w_samples_2/np.linalg.norm(mean_w_samples_2)
+            current_w_s = mean_w_samples_s/np.linalg.norm(mean_w_samples_s)
             
             
             m_o = np.dot(current_o_w, true_w)/(np.linalg.norm(current_o_w)*np.linalg.norm(true_w))
             m = np.dot(current_w, true_w)/(np.linalg.norm(current_w)*np.linalg.norm(true_w))
             # m_1 = np.dot(current_w_1, true_w)/(np.linalg.norm(current_w_1)*np.linalg.norm(true_w))
             # m_2 = np.dot(current_w_2, true_w)/(np.linalg.norm(current_w_2)*np.linalg.norm(true_w))
+            m_s = np.dot(current_w_s, true_w)/(np.linalg.norm(current_w_s)*np.linalg.norm(true_w))
             
             
             estimate_w_o[ite].append(m_o)
             estimate_w[ite].append(m)
+            estimate_w_s[ite].append(m_s)
 
             
             
@@ -327,66 +342,48 @@ def coteaching_batch():
             
             
             # run_algo :
-            psi_set_id_o = algos.point_greedy(w_samples, b, data_psi_set)
+            psi_set_id_o = algos.point_greedy(w_samples_o, b, data_psi_set)
             psi_set_id = algos.point_greedy(w_samples, b, data_psi_set)
             m_psi_set_id = algos.point_medoids(w_samples, b, data_psi_set)
             
             #psi_set_id_1 = run_algo(method, w_samples_1, int(b/2), B)
             #psi_set_id_2 = run_algo(method, w_samples_2, int(b/2), B)
             
+            if i < N/2:
+                psi_set_id_s = algos.point_medoids(w_samples_s, b, data_psi_set)
+            else:
+                psi_set_id_s = algos.point_greedy(w_samples_s, b, data_psi_set)
+                
+                
+            
+            
+            
+            d_bdry_s = np.where(np.round(compute_linear_regression(current_w_s, m_point),2)==0)
             d_bdry = np.where(np.round(compute_linear_regression(current_w, m_point),2)==0)
-            t_d_bdry = np.where(np.round(compute_linear_regression(true_w, m_point),2)==0)
+            target_d_bdry = np.where(np.round(compute_linear_regression(target_w, m_point),2)==0)
+            true_d_bdry = np.where(np.round(compute_linear_regression(true_w, m_point),2)==0)
             
             
-            plt.figure(figsize=(16,8))   
+
             
-            plt.subplot(1,2,1)
-            plt.title('greedy selection')
-            plt.plot(point_class_0[:,0], point_class_0[:,1], 'o', color='lightblue', label='class = 0')
-            plt.plot(point_class_1[:,0], point_class_1[:,1], 'o', color='lightgreen', label='class = 1')
-            plt.plot(m_point[:, 1][d_bdry], m_point[:, 2][d_bdry], color='black')
-            plt.plot(m_point[:, 1][t_d_bdry], m_point[:, 2][t_d_bdry], color='red')
-            plt.plot(data_psi_set[psi_set_id,1], data_psi_set[psi_set_id,2], 'o', color='purple', label='query')
-            plt.axis('equal')
-            plt.legend()
-            plt.tight_layout()
             
-            plt.subplot(1,2,2)
-            plt.title('medoids selection')
-            plt.plot(point_class_0[:,0], point_class_0[:,1], 'o', color='lightblue', label='class = 0')
-            plt.plot(point_class_1[:,0], point_class_1[:,1], 'o', color='lightgreen', label='class = 1')
-            plt.plot(m_point[:, 1][d_bdry], m_point[:, 2][d_bdry], color='black')
-            plt.plot(m_point[:, 1][t_d_bdry], m_point[:, 2][t_d_bdry], color='red')
-            plt.plot(data_psi_set[m_psi_set_id,1], data_psi_set[m_psi_set_id,2], 'o', color='purple', label='query')
-            plt.axis('equal')
-            plt.legend()
-            plt.tight_layout()
-            plt.show()
+            corruption_ratio_base[ite].append(len(np.where(np.array(t_s_set) != np.array(s_set))[0])/len(s_set))
+            corruption_ratio_robust[ite].append(len(np.where(np.array(t_s_set_s) != np.array(s_set_s))[0])/len(s_set_s))
+
             
             
             
             
-            q = input()
-            if q == "q":
-                exit()
-            #psi_set_id_1 = algos.optimal_greedy(w_samples_1, int(b/2), i/b, N/2)
-            #psi_set_id_2 = algos.optimal_greedy(w_samples_2, int(b/2), i/b, N/2)
-            
-            
-            # psi_set_id_1_o = run_algo("optimal", w_samples_1, 2, B)
-            # psi_set_id_2_o = run_algo("optimal", w_samples_2, 2, B)
-            
-            #print(f'optimal1' + f"{psi_set_id_1_o}")
+
+                
+
             # 1, 2 에서 각각 다시 따로 active removal
  
             #selected_ids_o.append(psi_set_id_o)
-            selected_ids.append(psi_set_id)
 
             
-            temp_s_1 = []
-            temp_s_2 = []
-            temp_psi_set_1 = []
-            temp_psi_set_2 = []
+            corruption_label_base = []
+            corruption_label_robust = []
             
             
             for j in range(b):
@@ -398,14 +395,28 @@ def coteaching_batch():
                 
                 o_psi, _, o_s = get_feedback(data_psi_set[psi_set_id_o[j]], true_w, true_w)
                 psi, s, t_s = get_feedback(data_psi_set[psi_set_id[j]], target_w, true_w)
+                psi_s, s_s, t_s_s = get_feedback(data_psi_set[psi_set_id_s[j]], target_w, true_w)
                 
+                if s != t_s:
+                    corruption_label_base.append(j)
+                    
+                if s_s != t_s_s:
+                    corruption_label_robust.append(j)
+                    
+                    
+                                    
                 oracle_psi_set.append(o_psi)
                 oracle_s_set.append(o_s)
                 
                 psi_set.append(psi)
                 s_set.append(s)
                 t_s_set.append(t_s)
+                t_s_set_s.append(t_s_s)
+                
+                
 
+                psi_set_s.append(psi_s)
+                s_set_s.append(s_s)
                 
                 # if j<b/2:
                     
@@ -465,6 +476,65 @@ def coteaching_batch():
                     
                 t+=1
                 
+            
+            ## 이전에 corruption 된 label 과 같은것을 뽑앗을 때 corruption label 로 지정
+            if len(corruption_label_base):
+                corruption_id_base = np.append(corruption_id_base, psi_set_id[np.array(corruption_label_base)])
+                
+                
+            corruption_check_base = np.where(np.array(list(map(lambda x: x in corruption_id_base, psi_set_id)))==1)[0]
+            #corrupted_base = psi_set_id[corruption_check_base]
+                #psi_set_id = np.delete(psi_set_id, np.array(corruption_label_base))
+            print(f"corruption_base {psi_set_id[corruption_check_base]}")
+            
+            if len(corruption_label_robust):
+                corruption_id_robust = np.append(corruption_id_robust, psi_set_id_s[np.array(corruption_label_robust)])
+                #psi_set_id_s = np.delete(psi_set_id_s, np.array(corruption_label_robust))
+            
+            corruption_check_robust = np.where(np.array(list(map(lambda x: x in corruption_id_robust, psi_set_id_s)))==1)[0]
+            
+            print(f"corruption_robust {psi_set_id_s[corruption_check_robust]}")
+            
+                
+            plt.figure(figsize=(16,8))   
+            
+            plt.subplot(1,2,1)
+            plt.title('greedy selection')
+            plt.plot(point_class_0[:,0], point_class_0[:,1], 'o', color='lightblue', label='class = 0')
+            plt.plot(point_class_1[:,0], point_class_1[:,1], 'o', color='lightgreen', label='class = 1')
+            plt.plot(m_point[:, 1][d_bdry], m_point[:, 2][d_bdry], color='violet')
+            plt.plot(m_point[:, 1][d_bdry_s], m_point[:, 2][d_bdry_s], color='red')
+            plt.plot(m_point[:, 1][target_d_bdry], m_point[:, 2][target_d_bdry],'-.', color='darkslategray')
+            plt.plot(m_point[:, 1][true_d_bdry], m_point[:, 2][true_d_bdry], '-.', color='blue')
+            plt.plot(data_psi_set[psi_set_id,1], data_psi_set[psi_set_id,2], 'o', color='purple', label='query')
+            if len(corruption_check_base):
+                plt.plot(data_psi_set[psi_set_id[corruption_check_base],1], data_psi_set[psi_set_id[corruption_check_base],2], 'o', color='orange', label='corruption')
+            
+            plt.axis('equal')
+            plt.legend()
+            plt.tight_layout()
+            
+            plt.subplot(1,2,2)
+            plt.title('robust selection')
+            plt.plot(point_class_0[:,0], point_class_0[:,1], 'o', color='lightblue', label='class = 0')
+            plt.plot(point_class_1[:,0], point_class_1[:,1], 'o', color='lightgreen', label='class = 1')
+            plt.plot(m_point[:, 1][d_bdry], m_point[:, 2][d_bdry], color='violet')
+            plt.plot(m_point[:, 1][d_bdry_s], m_point[:, 2][d_bdry_s], color='red')
+            plt.plot(m_point[:, 1][target_d_bdry], m_point[:, 2][target_d_bdry], '-.',color='darkslategray')
+            plt.plot(m_point[:, 1][true_d_bdry], m_point[:, 2][true_d_bdry], '-.',color='blue')
+            plt.plot(data_psi_set[psi_set_id_s,1], data_psi_set[psi_set_id_s,2], 'o', color='purple', label='query')
+            if len(corruption_check_robust):
+                plt.plot(data_psi_set[psi_set_id_s[corruption_check_robust],1], data_psi_set[psi_set_id_s[corruption_check_robust],2], 'o', color='orange', label='corruption')
+            plt.axis('equal')
+            plt.legend()
+            plt.tight_layout()
+            
+            plt.show()
+                
+            q = input()
+            if q == "q":
+                exit()
+                
                 
             i += b
             
@@ -484,52 +554,45 @@ def coteaching_batch():
         # w_sampler_2.y = np.array(s_set_2).reshape(-1,1)
         # w_samples_2 = w_sampler_2.sample(M)
 
+        w_sampler_s.A = psi_set_s
+        w_sampler_s.y = np.array(s_set_s).reshape(-1,1)
+        w_samples_s = w_sampler_s.sample(M)
 
         mean_w_samples_o = np.mean(w_samples_o,axis=0)
         mean_w_samples = np.mean(w_samples,axis=0)
         # mean_w_samples_1 = np.mean(w_samples_1,axis=0)
         # mean_w_samples_2 = np.mean(w_samples_2,axis=0)
+        mean_w_samples_s = np.mean(w_samples_s,axis=0)
         
         current_w_o = mean_w_samples_o/np.linalg.norm(mean_w_samples_o)
         current_w = mean_w_samples/np.linalg.norm(mean_w_samples)
         # current_w_1 = mean_w_samples_1/np.linalg.norm(mean_w_samples_1)
         # current_w_2 = mean_w_samples_2/np.linalg.norm(mean_w_samples_2)
+        current_w_s = mean_w_samples_s/np.linalg.norm(mean_w_samples_s)
         
         m_o = np.dot(current_w_o, true_w)/(np.linalg.norm(current_w_o)*np.linalg.norm(true_w))
         m = np.dot(current_w, true_w)/(np.linalg.norm(current_w)*np.linalg.norm(true_w))
         # m_1 = np.dot(current_w_1, true_w)/(np.linalg.norm(current_w_1)*np.linalg.norm(true_w))
         # m_2 = np.dot(current_w_2, true_w)/(np.linalg.norm(current_w_2)*np.linalg.norm(true_w))
+        m_s = np.dot(current_w_s, true_w)/(np.linalg.norm(current_w_s)*np.linalg.norm(true_w))
         
         
         estimate_w_o[ite].append(m_o)
         estimate_w[ite].append(m)
         # estimate_w_1[ite].append(m_1)
         # estimate_w_2[ite].append(m_2)
+        estimate_w_s[ite].append(m_s)
+        corruption_ratio_base[ite].append(len(np.where(np.array(t_s_set) != np.array(s_set))[0])/len(s_set))
+        corruption_ratio_robust[ite].append(len(np.where(np.array(t_s_set_s) != np.array(s_set_s))[0])/len(s_set_s))        
+
+        
+        #print(f"base corruption ratio = {1-(len(np.where(np.array(t_s_set) == np.array(s_set))[0])/len(s_set))}")
+        # print(f"model1 corruption ratio = {1-(len(np.where(np.array(t_s_set_1) == np.array(s_set_1))[0])/len(s_set_1))}")
+        # print(f"model2 corruption ratio = {1-(len(np.where(np.array(t_s_set_2) == np.array(s_set_2))[0])/len(s_set_2))}")
         
         
-        print(selected_ids)
-        print(selected_ids_1)
-        print(selected_ids_2)
         
-        print(f"base corruption ratio = {1-(len(np.where(np.array(t_s_set) == np.array(s_set))[0])/len(s_set))}")
-        print(f"model1 corruption ratio = {1-(len(np.where(np.array(t_s_set_1) == np.array(s_set_1))[0])/len(s_set_1))}")
-        print(f"model2 corruption ratio = {1-(len(np.where(np.array(t_s_set_2) == np.array(s_set_2))[0])/len(s_set_2))}")
-        
-        print(len(np.where(np.array(t_s_set) == np.array(s_set))[0]))
-        
-        
-    
-    fg_0 = plt.figure(figsize=(5,15))
-    
-    c = fg_0.add_subplot(311)
-    c1 = fg_0.add_subplot(312)
-    c2 = fg_0.add_subplot(313)
-    
-    c.bar(count_query.keys(), count_query.values())
-    c1.bar(count_query_1.keys(), count_query_1.values())
-    c2.bar(count_query_2.keys(), count_query_2.values())
-    
-    
+
     # plot graph
         
     
@@ -539,6 +602,9 @@ def coteaching_batch():
     w0 = fg.add_subplot(322)
     w1 = fg.add_subplot(323)
     w2 = fg.add_subplot(324)
+    corruption_ratio = fg.add_subplot(325)
+    
+    
     
     
     
@@ -547,6 +613,8 @@ def coteaching_batch():
     evaluate_metric.plot(b*np.arange(len(estimate_w[ite])), np.mean(np.array(estimate_w), axis=0), color='violet', label='base')
     #evaluate_metric.plot(b*np.arange(len(estimate_w_1[ite])), np.mean(np.array(estimate_w_1), axis=0), color='green', label='model1')
     #evaluate_metric.plot(b*np.arange(len(estimate_w_1[ite])), np.mean(np.array(estimate_w_2), axis=0), color='orange', label='model2')
+    evaluate_metric.plot(b*np.arange(len(estimate_w_s[ite])), np.mean(np.array(estimate_w_s), axis=0), color='red', label='robust')
+    
     evaluate_metric.set_ylabel('m')
     evaluate_metric.set_xlabel('N')
     evaluate_metric.set_title('evaluate metric')
@@ -572,9 +640,16 @@ def coteaching_batch():
     w2.set_ylabel('w2')
     w2.set_title('target w2')
     
+    corruption_ratio.plot(b*np.arange(len(corruption_ratio_base[ite])), np.mean(np.array(corruption_ratio_base), axis=0), color='violet', label='base')
+    corruption_ratio.plot(b*np.arange(len(corruption_ratio_base[ite])), np.mean(np.array(corruption_ratio_robust), axis=0), color='red', label='robust')
+    evaluate_metric.set_xlabel('N')
+    evaluate_metric.legend()
+    corruption_ratio.set_title("corruption_ratio")    
     
-    plt.savefig('./outputs/robust_time_varying_w_output_1.png')
+    #plt.savefig('./outputs/robust_time_varying_w_output_1.png')
+    plt.tight_layout()
     plt.show()
+    
     
 if __name__ == "__main__":
     coteaching_batch()

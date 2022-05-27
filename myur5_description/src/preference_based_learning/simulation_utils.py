@@ -1,6 +1,8 @@
 import numpy as np
 import sys
 import os
+
+from paddle import uniform
 sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
 import rospy
 import moveit_commander
@@ -90,27 +92,41 @@ def bench_get_feedback(simulation_object, input_A, input_B, true_w):
 
 def get_feedback(psi, w, true_w):
      
-    s = 0
     t_s = 0
+    s = 0
+    
+    
+    # define corruption ratio and select from uniform dist
+    # p = np.random.uniform(0,1,1)
+    # if p>0.2:
+    #     s = 0
+    # else:
+    #     u  = [0.5, 0.5]
+    #     s = np.random.choice(2, 1, p=u)
+    #     if s == 0:
+    #         s = -1
+    #     else:
+    #         s = 1
+        
     
     #probability model feedback
-    f_w = 1/(1+np.exp(-np.dot(psi, w)))
-    p_psi = [f_w, (1-f_w)]
-    label = np.random.choice(2, 1, p=p_psi)
+    # f_w = 1/(1+np.exp(-np.dot(psi, w)))
+    # p_psi = [f_w, (1-f_w)]
+    # label = np.random.choice(2, 1, p=p_psi)
     
     while s==0:
         
         # oracle feedback
-        # if np.dot(psi, w)>0:
-        #     s = 1
-        # else:
-        #     s =-1 
+        if np.dot(psi, w)>0:
+            s = 1
+        else:
+            s =-1 
             
         # probability model feedback
-        if label==0:
-            s =1
-        else:
-            s =-1
+        # if label==0:
+        #     s =1
+        # else:
+        #     s =-1
         
     while t_s==0:
         

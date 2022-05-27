@@ -69,7 +69,411 @@ def change_w_element(true_w):
     
     return n_w
 
+def robust_batch(method, N, M, b):
+    
+    
+    e = 5
+        
+    
+    if N % b != 0:
+       print('N must be divisible to b')
+       exit(0)
+    B = 20*b
+    data = np.load('../sampled_trajectories/normalized_psi_set.npz')
+    data_psi_set = data['PSI_SET']
 
+
+    estimate_w_o = [[0]for i in range(e)]
+    estimate_w = [[0]for i in range(e)]
+    estimate_w_1 = [[0]for i in range(e)]
+    estimate_w_2 = [[0]for i in range(e)]
+    estimate_w_s = [[0]for i in range(e)]
+    
+
+
+
+    for ite in range(e):
+        target_w0 = []
+        target_w1 = []
+        target_w2 = []
+        target_w3 = []
+        
+        
+        true_w = np.random.rand(4)
+        true_w = true_w/np.linalg.norm(true_w)
+        
+        target_w = change_w_element(true_w)
+        #target_w=true_w
+        t = 1
+
+        w_sampler = Sampler(d)
+        oracle_w_sampler = copy.deepcopy(w_sampler)
+        w_sampler_1 = Sampler(d)
+        w_sampler_2 = Sampler(d)
+        w_sampler_s = copy.deepcopy(w_sampler)
+        
+        
+        #######
+        w_samples_1 = w_sampler_1.sample(M)
+        mean_w_samples_1 = np.mean(w_samples_1,axis=0)
+        last_w1 = mean_w_samples_1
+        #######
+        
+        
+        oracle_psi_set = []
+        psi_set = []
+        psi_set_1 = []
+        psi_set_2 = []
+        psi_set_s = []
+        
+        
+        
+        oracle_s_set = []
+        s_set = []
+        s_set_s = []
+        
+        s_set_1 = []
+        s_set_2 = []
+        
+        t_s_set = []
+        t_s_set_1 = []
+        t_s_set_2 = []
+        
+        
+        #initialize
+        init_psi_id = np.random.randint(0, len(data_psi_set), b)
+        
+        o_init_psi_id = init_psi_id
+        o_init_psi_id_s = init_psi_id
+        init_psi_id_1 = np.random.randint(0, len(data_psi_set), int(b/2))
+        init_psi_id_2 = np.random.randint(0, len(data_psi_set), int(b/2))
+
+        
+        for j in range(b):
+            # get_feedback : phi, psi, user's feedback 값을 구함
+            #target_w = get_target_w(true_w, t)
+            target_w0.append(target_w[0])
+            target_w1.append(target_w[1])
+            target_w2.append(target_w[2])
+            target_w3.append(target_w[3])
+            
+            o_psi, _, o_s = get_feedback(data_psi_set[o_init_psi_id[j]], true_w, true_w)
+            psi, s, t_s = get_feedback(data_psi_set[init_psi_id[j]], target_w, true_w)
+            psi_s, s_s, _ = get_feedback(data_psi_set[o_init_psi_id_s[j]], target_w, true_w)
+            
+            
+            
+            oracle_psi_set.append(o_psi)
+            oracle_s_set.append(o_s)
+            
+            psi_set_s.append(psi_s)
+            s_set_s.append(s_s)
+            
+            psi_set.append(psi)
+            s_set.append(s)
+            t_s_set.append(t_s)
+
+            
+            if j<b/2:
+                psi_1, s_1, t_s_1 = get_feedback(data_psi_set[init_psi_id_2[j]], target_w, true_w)
+                psi_2, s_2, t_s_2 = get_feedback(data_psi_set[init_psi_id_1[j]], target_w, true_w)
+
+                psi_set_1.append(psi_1)
+                s_set_1.append(s_1)
+                
+                psi_set_2.append(psi_2)
+                s_set_2.append(s_2)
+                
+                t_s_set_1.append(t_s_1)
+                t_s_set_2.append(t_s_2)
+            
+
+            t+=1
+        i = b
+        m = 0
+        
+        
+        while i < N:
+            oracle_w_sampler.A = oracle_psi_set
+            oracle_w_sampler.y = np.array(oracle_s_set).reshape(-1,1)
+            w_samples_o = oracle_w_sampler.sample(M)
+            
+            w_sampler.A = psi_set
+            w_sampler.y = np.array(s_set).reshape(-1,1)
+            w_samples = w_sampler.sample(M)
+            
+            w_sampler_1.A = psi_set_1
+            w_sampler_1.y = np.array(s_set_1).reshape(-1,1)
+            w_samples_1 = w_sampler_1.sample(M)
+            
+            w_sampler_2.A = psi_set_2
+            w_sampler_2.y = np.array(s_set_2).reshape(-1,1)
+            w_samples_2 = w_sampler_2.sample(M)
+            
+            w_sampler_s.A = psi_set_s
+            w_sampler_s.y = np.array(s_set_s).reshape(-1,1)
+            w_samples_s = w_sampler_s.sample(M)
+            
+            if i%(60)==0 and i <100:
+              target_w = change_w_element(target_w)
+
+            
+            print(f'sample length {len(w_samples_1)}')
+            print(f'1st w sample {w_samples_1[0]}')
+            
+            mean_w_samples_o = np.mean(w_samples_o,axis=0)
+            mean_w_samples = np.mean(w_samples,axis=0)
+            mean_w_samples_1 = np.mean(w_samples_1,axis=0)
+            mean_w_samples_2 = np.mean(w_samples_2,axis=0)
+            mean_w_samples_s = np.mean(w_samples_s,axis=0)
+            print(f"parameter gap = {np.linalg.norm(last_w1-mean_w_samples_1)}")
+            
+            
+            current_o_w = mean_w_samples_o/np.linalg.norm(mean_w_samples_o)
+            current_w = mean_w_samples/np.linalg.norm(mean_w_samples)
+            current_w_1 = mean_w_samples_1/np.linalg.norm(mean_w_samples_1)
+            current_w_2 = mean_w_samples_2/np.linalg.norm(mean_w_samples_2)
+            current_w_s = mean_w_samples_s/np.linalg.norm(mean_w_samples_s)
+            
+            
+            m_o = np.dot(current_o_w, true_w)/(np.linalg.norm(current_o_w)*np.linalg.norm(true_w))
+            m = np.dot(current_w, true_w)/(np.linalg.norm(current_w)*np.linalg.norm(true_w))
+            m_1 = np.dot(current_w_1, true_w)/(np.linalg.norm(current_w_1)*np.linalg.norm(true_w))
+            m_2 = np.dot(current_w_2, true_w)/(np.linalg.norm(current_w_2)*np.linalg.norm(true_w))
+            m_s = np.dot(current_w_s, true_w)/(np.linalg.norm(current_w_s)*np.linalg.norm(true_w))
+            
+            
+            
+            estimate_w_o[ite].append(m_o)
+            estimate_w[ite].append(m)
+            estimate_w_1[ite].append(m_1)
+            estimate_w_2[ite].append(m_2)
+            estimate_w_s[ite].append(m_s)
+
+            
+
+            print('Samples so far: ' + str(i))
+            
+            
+            
+            # run_algo :
+            psi_set_id_o = run_algo(method, w_samples_o, b, B)
+            psi_set_id = run_algo(method, w_samples, b, B)
+            # psi_set_id_1 = run_algo('medoids', w_samples_1, int(b/2), B)
+            # psi_set_id_2 = run_algo('medoids', w_samples_2, int(b/2), B)
+            # psi_set_id_s = run_algo('medoids', w_samples_s, b, B)
+            
+            if i < N/2:
+                psi_set_id_1 = run_algo('medoids', w_samples_1, int(b/2), B)
+                psi_set_id_2 = run_algo('medoids', w_samples_2, int(b/2), B)
+                psi_set_id_s = run_algo('medoids', w_samples_s, b, B)
+                
+            else:
+                psi_set_id_1 = run_algo(method, w_samples_1, int(b/2), B)
+                psi_set_id_2 = run_algo(method, w_samples_2, int(b/2), B)
+                psi_set_id_s = run_algo(method, w_samples_s, b, B)
+                
+            
+            for j in range(b):
+        
+                #target_w = get_target_w(true_w, t)
+                target_w0.append(target_w[0])
+                target_w1.append(target_w[1])
+                target_w2.append(target_w[2])
+                target_w3.append(target_w[3])
+                
+                o_psi, _, o_s = get_feedback(data_psi_set[psi_set_id_o[j]], true_w, true_w)
+                psi, s, t_s = get_feedback(data_psi_set[psi_set_id[j]], target_w, true_w)
+                psi_s, s_s, t_s_s = get_feedback(data_psi_set[psi_set_id_s[j]], target_w, true_w)
+                
+                
+                oracle_psi_set.append(o_psi)
+                oracle_s_set.append(o_s)
+                
+                psi_set.append(psi)
+                psi_set_s.append(psi_s)
+                
+                if i < N/2:
+                    s_set.append(s)
+                    s_set_s.append(s_s)
+                    
+                    
+                else:
+                    s_set.append(t_s)
+                    s_set_s.append(t_s_s)
+                    
+                t_s_set.append(t_s)
+                
+                
+                if j<b/2:
+                    
+                    psi_1, s_1, t_s_1 = get_feedback(data_psi_set[psi_set_id_2[j]], target_w, true_w)
+                    psi_2, s_2, t_s_2 = get_feedback(data_psi_set[psi_set_id_1[j]], target_w, true_w)
+
+
+
+                    prob1_1 = 1/(1+(np.exp(-s_1*np.dot(current_w_1, data_psi_set[psi_set_id_2[j]].T))))
+                    prob1_2 = 1/(1+(np.exp(-s_1*np.dot(current_w_2, data_psi_set[psi_set_id_1[j]].T))))
+                    
+                    #print(f"distance {np.linalg.norm(current_w_1-current_w_2)}")
+                    #print(f"w2 {current_w_2}")
+                    
+                    # 1 = prefer A, 0 = prefer B
+                    if s_1 == 1:
+                        z_1 = 1
+                    else:
+                        z_1 = 0
+                        
+                    if s_2 == 1:
+                        z_2 = 1
+                    else:
+                        z_2 = 0
+                    
+                    # entropy 계산 추가
+                    #print(f"{prob1_1}, {1-prob1_1}")
+                    
+                    #sum_of_entropy += np.min((prob1_1, 1-prob1_1))
+
+
+                    psi_set_1.append(psi_1)
+                    psi_set_2.append(psi_2)
+                     
+                    if i<N/2:
+                        s_set_1.append(s_1)
+                        s_set_2.append(s_2)
+                    else:
+                        s_set_1.append(t_s_1)
+                        s_set_2.append(t_s_2)
+                        
+                    
+                    t_s_set_1.append(t_s_1)
+                    t_s_set_2.append(t_s_2)
+                    
+            last_w1 = mean_w_samples_1
+                    
+
+
+                
+                
+            i += b
+            
+        oracle_w_sampler.A = oracle_psi_set
+        oracle_w_sampler.y = np.array(oracle_s_set).reshape(-1,1)
+        w_samples_o = oracle_w_sampler.sample(M)
+            
+        w_sampler.A = psi_set
+        w_sampler.y = np.array(s_set).reshape(-1,1)
+        w_samples = w_sampler.sample(M)
+            
+        w_sampler_1.A = psi_set_1
+        w_sampler_1.y = np.array(s_set_1).reshape(-1,1)
+        w_samples_1 = w_sampler_1.sample(M)
+        
+        w_sampler_2.A = psi_set_2
+        w_sampler_2.y = np.array(s_set_2).reshape(-1,1)
+        w_samples_2 = w_sampler_2.sample(M)
+        
+        w_sampler_s.A = psi_set_s
+        w_sampler_s.y = np.array(s_set_s).reshape(-1,1)
+        w_samples_s = w_sampler_s.sample(M)
+
+
+        mean_w_samples_o = np.mean(w_samples_o,axis=0)
+        mean_w_samples = np.mean(w_samples,axis=0)
+        mean_w_samples_1 = np.mean(w_samples_1,axis=0)
+        mean_w_samples_2 = np.mean(w_samples_2,axis=0)
+        mean_w_samples_s = np.mean(w_samples_s,axis=0)
+        
+        
+        current_w_o = mean_w_samples_o/np.linalg.norm(mean_w_samples_o)
+        current_w = mean_w_samples/np.linalg.norm(mean_w_samples)
+        current_w_1 = mean_w_samples_1/np.linalg.norm(mean_w_samples_1)
+        current_w_2 = mean_w_samples_2/np.linalg.norm(mean_w_samples_2)
+        current_w_s = mean_w_samples_s/np.linalg.norm(mean_w_samples_s)
+        
+        
+        m_o = np.dot(current_w_o, true_w)/(np.linalg.norm(current_w_o)*np.linalg.norm(true_w))
+        m = np.dot(current_w, true_w)/(np.linalg.norm(current_w)*np.linalg.norm(true_w))
+        m_1 = np.dot(current_w_1, true_w)/(np.linalg.norm(current_w_1)*np.linalg.norm(true_w))
+        m_2 = np.dot(current_w_2, true_w)/(np.linalg.norm(current_w_2)*np.linalg.norm(true_w))
+        m_s = np.dot(current_w_s, true_w)/(np.linalg.norm(current_w_s)*np.linalg.norm(true_w))
+        
+        
+        
+        estimate_w_o[ite].append(m_o)
+        estimate_w[ite].append(m)
+        estimate_w_1[ite].append(m_1)
+        estimate_w_2[ite].append(m_2)
+        estimate_w_s[ite].append(m_s)
+        
+        
+        
+        #print(selected_ids)
+        #print(selected_ids_1)
+        #print(selected_ids_2)
+        
+        print(f"base corruption ratio = {1-(len(np.where(np.array(t_s_set) == np.array(s_set))[0])/len(s_set))}")
+        print(f"model1 corruption ratio = {1-(len(np.where(np.array(t_s_set_1) == np.array(s_set_1))[0])/len(s_set_1))}")
+        print(f"model2 corruption ratio = {1-(len(np.where(np.array(t_s_set_2) == np.array(s_set_2))[0])/len(s_set_2))}")
+        
+        
+        
+        
+    
+    # plot graph
+        
+    
+    fg = plt.figure(figsize=(10,15))
+    
+    evaluate_metric = fg.add_subplot(321)
+    w0 = fg.add_subplot(322)
+    w1 = fg.add_subplot(323)
+    w2 = fg.add_subplot(324)
+    w3 = fg.add_subplot(325)
+    
+    
+    
+    #plt.subplot(2, 2, 1)
+    evaluate_metric.plot(b*np.arange(len(estimate_w[ite])), np.mean(np.array(estimate_w_o), axis=0), color='blue', label='oracle')
+    evaluate_metric.plot(b*np.arange(len(estimate_w[ite])), np.mean(np.array(estimate_w), axis=0), color='violet', label='base')
+    evaluate_metric.plot(b*np.arange(len(estimate_w_1[ite])), np.mean(np.array(estimate_w_1), axis=0), color='green', label='model1')
+    evaluate_metric.plot(b*np.arange(len(estimate_w_1[ite])), np.mean(np.array(estimate_w_2), axis=0), color='orange', label='model2')
+    evaluate_metric.plot(b*np.arange(len(estimate_w_1[ite])), np.mean(np.array(estimate_w_s), axis=0), color='red', label='robust')
+    
+    evaluate_metric.set_ylabel('m')
+    evaluate_metric.set_xlabel('N')
+    evaluate_metric.set_title('evaluate metric')
+    evaluate_metric.legend()
+    
+    
+        
+    w0.plot(np.arange(N), target_w0)
+    w0.plot(np.arange(N), np.ones(N)*true_w[0], 'r--')
+    w0.set_xlabel('N')
+    w0.set_ylabel('w0')
+    w0.set_title('target w0')
+    
+    w1.plot(np.arange(N), target_w1)
+    w1.plot(np.arange(N), np.ones(N)*true_w[1], 'r--')
+    w1.set_xlabel('N')
+    w1.set_ylabel('w1')
+    w1.set_title('target w1')
+
+    w2.plot(np.arange(N), target_w2)
+    w2.plot(np.arange(N), np.ones(N)*true_w[2], 'r--')
+    w2.set_xlabel('N')
+    w2.set_ylabel('w2')
+    w2.set_title('target w2')
+    
+    w3.plot(np.arange(N), target_w3)
+    w3.plot(np.arange(N), np.ones(N)*true_w[3], 'r--')
+    w3.set_xlabel('N')
+    w3.set_ylabel('w3')
+    w3.set_title('target w3')
+
+    plt.savefig('./outputs/robust_time_varying_w_output_1.png')
+    plt.show()
+ 
 
 def coteaching_batch(method, N, M, b):
     
@@ -641,7 +1045,7 @@ def batch(method, N, M, b):
             
             t+=1
             
-
+        
         
         
         i = b

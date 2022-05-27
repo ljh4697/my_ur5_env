@@ -16,6 +16,10 @@ elif method == 'user_greedy':
 elif method == "coteaching":
     b = int(sys.argv[4])
     demos.coteaching_batch('greedy', N, M, b)
+elif method == "robust":
+    b = int(sys.argv[4])
+    demos.robust_batch('greedy', N, M, b)
+    
 else:
     print('There is no method called ' + method)
 

@@ -33,8 +33,20 @@ point_data = np.delete(data, 2, axis=1)
 
 
 if __name__ == "__main__":
-    print('ee')
-    print(np.arange(10)[:9])
+    for i in range(10):
+        p = np.random.uniform(0,1,1)
+        if p>0.2:
+            s = 0
+        else:
+            print("uniform selection")
+            u  = [0.5, 0.5]
+            for i in range(10):
+                s = np.random.choice(2, 1, p=u)
+                if s == 0:
+                    s[0] = -1
+                
+                print(s)
+                
     
 
 # plt.figure(figsize=(8,8))   
