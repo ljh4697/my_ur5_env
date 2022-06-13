@@ -261,6 +261,8 @@ def run_algo(method, w_samples, b=10, B=200):
         return algos.successive_elimination(w_samples, b, B)
     elif method == 'random':
         return algos.random(w_samples)
+    elif method == "kdpp":
+        return algos.m_kdpp(w_samples, b, B)
     else:
         print('There is no method called ' + method)
         exit(0)

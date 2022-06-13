@@ -58,8 +58,6 @@ def change_w_element(true_w):
     max_id = np.argmax(n_w)
     min_id = np.argmin(n_w)
     
-    
-    
     max_v = n_w[max_id]
     min_v = n_w[min_id]
     
@@ -85,11 +83,14 @@ def robust_batch(method, N, M, b):
 
     estimate_w_o = [[0]for i in range(e)]
     estimate_w = [[0]for i in range(e)]
-    estimate_w_1 = [[0]for i in range(e)]
-    estimate_w_2 = [[0]for i in range(e)]
-    estimate_w_s = [[0]for i in range(e)]
+    #estimate_w_1 = [[0]for i in range(e)]
+    #estimate_w_2 = [[0]for i in range(e)]
+    estimate_w_r = [[0]for i in range(e)] #robust
+    estimate_w_k = [[0]for i in range(e)] #kdpp
     
-
+    corruption_ratio_base = [[0]for i in range(e)]
+    corruption_ratio_robust = [[0]for i in range(e)]
+    corruption_ratio_kdpp = [[0]for i in range(e)]
 
 
     for ite in range(e):
@@ -99,45 +100,49 @@ def robust_batch(method, N, M, b):
         target_w3 = []
         
         
-        true_w = np.random.rand(4)
+        #true_w = np.random.rand(4)
+        true_w = [np.random.uniform(0,0.1), 0.2, np.random.uniform(0.9,0.99), 0.42]
         true_w = true_w/np.linalg.norm(true_w)
         
         target_w = change_w_element(true_w)
+        #target_w = np.random.rand(4)
+        #target_w = target_w/np.linalg.norm(target_w)
+        
         #target_w=true_w
         t = 1
 
         w_sampler = Sampler(d)
         oracle_w_sampler = copy.deepcopy(w_sampler)
-        w_sampler_1 = Sampler(d)
-        w_sampler_2 = Sampler(d)
-        w_sampler_s = copy.deepcopy(w_sampler)
+        #w_sampler_1 = Sampler(d)
+        #w_sampler_2 = Sampler(d)
+        w_sampler_r = copy.deepcopy(w_sampler)
+        w_sampler_k = copy.deepcopy(w_sampler)
         
-        
-        #######
-        w_samples_1 = w_sampler_1.sample(M)
-        mean_w_samples_1 = np.mean(w_samples_1,axis=0)
-        last_w1 = mean_w_samples_1
-        #######
         
         
         oracle_psi_set = []
         psi_set = []
         psi_set_1 = []
         psi_set_2 = []
-        psi_set_s = []
+        psi_set_r = []
+        psi_set_k = []
         
         
         
         oracle_s_set = []
         s_set = []
-        s_set_s = []
+        s_set_r = []
         
         s_set_1 = []
         s_set_2 = []
+        s_set_k = []
         
         t_s_set = []
+        t_s_set_r = []
+        
         t_s_set_1 = []
         t_s_set_2 = []
+        t_s_set_k = []
         
         
         #initialize
@@ -145,8 +150,11 @@ def robust_batch(method, N, M, b):
         
         o_init_psi_id = init_psi_id
         o_init_psi_id_s = init_psi_id
-        init_psi_id_1 = np.random.randint(0, len(data_psi_set), int(b/2))
-        init_psi_id_2 = np.random.randint(0, len(data_psi_set), int(b/2))
+        o_init_psi_id_k = init_psi_id
+        
+        
+        #init_psi_id_1 = np.random.randint(0, len(data_psi_set), int(b/2))
+        #init_psi_id_2 = np.random.randint(0, len(data_psi_set), int(b/2))
 
         
         for j in range(b):
@@ -159,33 +167,40 @@ def robust_batch(method, N, M, b):
             
             o_psi, _, o_s = get_feedback(data_psi_set[o_init_psi_id[j]], true_w, true_w)
             psi, s, t_s = get_feedback(data_psi_set[init_psi_id[j]], target_w, true_w)
-            psi_s, s_s, _ = get_feedback(data_psi_set[o_init_psi_id_s[j]], target_w, true_w)
+            psi_r, s_r, t_s_r = get_feedback(data_psi_set[o_init_psi_id_s[j]], target_w, true_w)
+            psi_k, s_k, t_s_k = get_feedback(data_psi_set[o_init_psi_id_k[j]], target_w, true_w)
             
             
             
             oracle_psi_set.append(o_psi)
             oracle_s_set.append(o_s)
             
-            psi_set_s.append(psi_s)
-            s_set_s.append(s_s)
-            
             psi_set.append(psi)
             s_set.append(s)
+
+            psi_set_r.append(psi_r)
+            s_set_r.append(s_r)
+            
+            psi_set_k.append(psi_k)
+            s_set_k.append(s_k)
+            
             t_s_set.append(t_s)
+            t_s_set_r.append(t_s_r)
+            t_s_set_k.append(t_s_k)
 
             
-            if j<b/2:
-                psi_1, s_1, t_s_1 = get_feedback(data_psi_set[init_psi_id_2[j]], target_w, true_w)
-                psi_2, s_2, t_s_2 = get_feedback(data_psi_set[init_psi_id_1[j]], target_w, true_w)
+            # if j<b/2:
+            #     psi_1, s_1, t_s_1 = get_feedback(data_psi_set[init_psi_id_2[j]], target_w, true_w)
+            #     psi_2, s_2, t_s_2 = get_feedback(data_psi_set[init_psi_id_1[j]], target_w, true_w)
 
-                psi_set_1.append(psi_1)
-                s_set_1.append(s_1)
+            #     psi_set_1.append(psi_1)
+            #     s_set_1.append(s_1)
                 
-                psi_set_2.append(psi_2)
-                s_set_2.append(s_2)
+            #     psi_set_2.append(psi_2)
+            #     s_set_2.append(s_2)
                 
-                t_s_set_1.append(t_s_1)
-                t_s_set_2.append(t_s_2)
+            #     t_s_set_1.append(t_s_1)
+            #     t_s_set_2.append(t_s_2)
             
 
             t+=1
@@ -202,54 +217,62 @@ def robust_batch(method, N, M, b):
             w_sampler.y = np.array(s_set).reshape(-1,1)
             w_samples = w_sampler.sample(M)
             
-            w_sampler_1.A = psi_set_1
-            w_sampler_1.y = np.array(s_set_1).reshape(-1,1)
-            w_samples_1 = w_sampler_1.sample(M)
+            # w_sampler_1.A = psi_set_1
+            # w_sampler_1.y = np.array(s_set_1).reshape(-1,1)
+            # w_samples_1 = w_sampler_1.sample(M)
             
-            w_sampler_2.A = psi_set_2
-            w_sampler_2.y = np.array(s_set_2).reshape(-1,1)
-            w_samples_2 = w_sampler_2.sample(M)
+            # w_sampler_2.A = psi_set_2
+            # w_sampler_2.y = np.array(s_set_2).reshape(-1,1)
+            # w_samples_2 = w_sampler_2.sample(M)
             
-            w_sampler_s.A = psi_set_s
-            w_sampler_s.y = np.array(s_set_s).reshape(-1,1)
-            w_samples_s = w_sampler_s.sample(M)
+            w_sampler_r.A = psi_set_r
+            w_sampler_r.y = np.array(s_set_r).reshape(-1,1)
+            w_samples_r = w_sampler_r.sample(M)
+            
+            w_sampler_k.A = psi_set_k
+            w_sampler_k.y = np.array(s_set_k).reshape(-1,1)
+            w_samples_k = w_sampler_k.sample(M)
             
             if i%(60)==0 and i <100:
-              target_w = change_w_element(target_w)
+                #target_w = true_w
+                target_w = change_w_element(target_w)
 
             
-            print(f'sample length {len(w_samples_1)}')
-            print(f'1st w sample {w_samples_1[0]}')
             
             mean_w_samples_o = np.mean(w_samples_o,axis=0)
             mean_w_samples = np.mean(w_samples,axis=0)
-            mean_w_samples_1 = np.mean(w_samples_1,axis=0)
-            mean_w_samples_2 = np.mean(w_samples_2,axis=0)
-            mean_w_samples_s = np.mean(w_samples_s,axis=0)
-            print(f"parameter gap = {np.linalg.norm(last_w1-mean_w_samples_1)}")
+            # mean_w_samples_1 = np.mean(w_samples_1,axis=0)
+            # mean_w_samples_2 = np.mean(w_samples_2,axis=0)
+            mean_w_samples_r = np.mean(w_samples_r,axis=0)
+            mean_w_samples_k = np.mean(w_samples_k,axis=0)
             
             
             current_o_w = mean_w_samples_o/np.linalg.norm(mean_w_samples_o)
             current_w = mean_w_samples/np.linalg.norm(mean_w_samples)
-            current_w_1 = mean_w_samples_1/np.linalg.norm(mean_w_samples_1)
-            current_w_2 = mean_w_samples_2/np.linalg.norm(mean_w_samples_2)
-            current_w_s = mean_w_samples_s/np.linalg.norm(mean_w_samples_s)
+            # current_w_1 = mean_w_samples_1/np.linalg.norm(mean_w_samples_1)
+            # current_w_2 = mean_w_samples_2/np.linalg.norm(mean_w_samples_2)
+            current_w_s = mean_w_samples_r/np.linalg.norm(mean_w_samples_r)
+            current_w_k = mean_w_samples_k/np.linalg.norm(mean_w_samples_k)
+            
             
             
             m_o = np.dot(current_o_w, true_w)/(np.linalg.norm(current_o_w)*np.linalg.norm(true_w))
             m = np.dot(current_w, true_w)/(np.linalg.norm(current_w)*np.linalg.norm(true_w))
-            m_1 = np.dot(current_w_1, true_w)/(np.linalg.norm(current_w_1)*np.linalg.norm(true_w))
-            m_2 = np.dot(current_w_2, true_w)/(np.linalg.norm(current_w_2)*np.linalg.norm(true_w))
+            # m_1 = np.dot(current_w_1, true_w)/(np.linalg.norm(current_w_1)*np.linalg.norm(true_w))
+            # m_2 = np.dot(current_w_2, true_w)/(np.linalg.norm(current_w_2)*np.linalg.norm(true_w))
             m_s = np.dot(current_w_s, true_w)/(np.linalg.norm(current_w_s)*np.linalg.norm(true_w))
+            m_k = np.dot(current_w_k, true_w)/(np.linalg.norm(current_w_k)*np.linalg.norm(true_w))
+            
             
             
             
             estimate_w_o[ite].append(m_o)
             estimate_w[ite].append(m)
-            estimate_w_1[ite].append(m_1)
-            estimate_w_2[ite].append(m_2)
-            estimate_w_s[ite].append(m_s)
-
+            #estimate_w_1[ite].append(m_1)
+            #estimate_w_2[ite].append(m_2)
+            estimate_w_r[ite].append(m_s) #robust
+            estimate_w_k[ite].append(m_k) # kdpp
+            
             
 
             print('Samples so far: ' + str(i))
@@ -261,18 +284,28 @@ def robust_batch(method, N, M, b):
             psi_set_id = run_algo(method, w_samples, b, B)
             # psi_set_id_1 = run_algo('medoids', w_samples_1, int(b/2), B)
             # psi_set_id_2 = run_algo('medoids', w_samples_2, int(b/2), B)
-            # psi_set_id_s = run_algo('medoids', w_samples_s, b, B)
+            # psi_set_id_s = run_algo('medoids', w_samples_r, b, B)
             
             if i < N/2:
-                psi_set_id_1 = run_algo('medoids', w_samples_1, int(b/2), B)
-                psi_set_id_2 = run_algo('medoids', w_samples_2, int(b/2), B)
-                psi_set_id_s = run_algo('medoids', w_samples_s, b, B)
+                #psi_set_id_1 = run_algo('medoids', w_samples_1, int(b/2), B)
+                #psi_set_id_2 = run_algo('medoids', w_samples_2, int(b/2), B)
+                psi_set_id_s = run_algo('kdpp', w_samples_r, b, B)
+                psi_set_id_k = run_algo('kdpp', w_samples_k, b, B)
+                
                 
             else:
-                psi_set_id_1 = run_algo(method, w_samples_1, int(b/2), B)
-                psi_set_id_2 = run_algo(method, w_samples_2, int(b/2), B)
-                psi_set_id_s = run_algo(method, w_samples_s, b, B)
+                # psi_set_id_1 = run_algo(method, w_samples_1, int(b/2), B)
+                # psi_set_id_2 = run_algo(method, w_samples_2, int(b/2), B)
+                psi_set_id_s = run_algo('kdpp', w_samples_r, b, B)
+                psi_set_id_k = run_algo(method, w_samples_k, b, B)
                 
+            corruption_ratio_base[ite].append(len(np.where(np.array(t_s_set) != np.array(s_set))[0])/len(s_set))
+            corruption_ratio_robust[ite].append(len(np.where(np.array(t_s_set_r) != np.array(s_set_r))[0])/len(s_set_r))
+            corruption_ratio_kdpp[ite].append(len(np.where(np.array(t_s_set_k) != np.array(s_set_k))[0])/len(s_set_k))
+
+            corruption_label_base = []
+            corruption_label_robust = []
+            corruption_label_kdpp = []
             
             for j in range(b):
         
@@ -284,72 +317,74 @@ def robust_batch(method, N, M, b):
                 
                 o_psi, _, o_s = get_feedback(data_psi_set[psi_set_id_o[j]], true_w, true_w)
                 psi, s, t_s = get_feedback(data_psi_set[psi_set_id[j]], target_w, true_w)
-                psi_s, s_s, t_s_s = get_feedback(data_psi_set[psi_set_id_s[j]], target_w, true_w)
+                psi_r, s_r, t_s_r = get_feedback(data_psi_set[psi_set_id_s[j]], target_w, true_w)
+                psi_k, s_k, t_s_k = get_feedback(data_psi_set[psi_set_id_k[j]], target_w, true_w)
                 
                 
                 oracle_psi_set.append(o_psi)
                 oracle_s_set.append(o_s)
                 
                 psi_set.append(psi)
-                psi_set_s.append(psi_s)
+                s_set.append(s)
                 
-                if i < N/2:
-                    s_set.append(s)
-                    s_set_s.append(s_s)
-                    
-                    
-                else:
-                    s_set.append(t_s)
-                    s_set_s.append(t_s_s)
-                    
+                psi_set_r.append(psi_r)
+                s_set_r.append(s_r)    
+                
+                psi_set_k.append(psi_k)
+                s_set_k.append(s_k)
+                
                 t_s_set.append(t_s)
+                t_s_set_r.append(t_s_r)
+                t_s_set_k.append(t_s_k)
                 
                 
-                if j<b/2:
+            #     if j<b/2:
                     
-                    psi_1, s_1, t_s_1 = get_feedback(data_psi_set[psi_set_id_2[j]], target_w, true_w)
-                    psi_2, s_2, t_s_2 = get_feedback(data_psi_set[psi_set_id_1[j]], target_w, true_w)
+            #         psi_1, s_1, t_s_1 = get_feedback(data_psi_set[psi_set_id_2[j]], target_w, true_w)
+            #         psi_2, s_2, t_s_2 = get_feedback(data_psi_set[psi_set_id_1[j]], target_w, true_w)
 
 
 
-                    prob1_1 = 1/(1+(np.exp(-s_1*np.dot(current_w_1, data_psi_set[psi_set_id_2[j]].T))))
-                    prob1_2 = 1/(1+(np.exp(-s_1*np.dot(current_w_2, data_psi_set[psi_set_id_1[j]].T))))
+            #         prob1_1 = 1/(1+(np.exp(-s_1*np.dot(current_w_1, data_psi_set[psi_set_id_2[j]].T))))
+            #         prob1_2 = 1/(1+(np.exp(-s_1*np.dot(current_w_2, data_psi_set[psi_set_id_1[j]].T))))
                     
-                    #print(f"distance {np.linalg.norm(current_w_1-current_w_2)}")
-                    #print(f"w2 {current_w_2}")
+            #         #print(f"distance {np.linalg.norm(current_w_1-current_w_2)}")
+            #         #print(f"w2 {current_w_2}")
                     
-                    # 1 = prefer A, 0 = prefer B
-                    if s_1 == 1:
-                        z_1 = 1
-                    else:
-                        z_1 = 0
+            #         # 1 = prefer A, 0 = prefer B
+            #         if s_1 == 1:
+            #             z_1 = 1
+            #         else:
+            #             z_1 = 0
                         
-                    if s_2 == 1:
-                        z_2 = 1
-                    else:
-                        z_2 = 0
+            #         if s_2 == 1:
+            #             z_2 = 1
+            #         else:
+            #             z_2 = 0
                     
-                    # entropy 계산 추가
-                    #print(f"{prob1_1}, {1-prob1_1}")
+            #         # entropy 계산 추가
+            #         #print(f"{prob1_1}, {1-prob1_1}")
                     
-                    #sum_of_entropy += np.min((prob1_1, 1-prob1_1))
+            #         #sum_of_entropy += np.min((prob1_1, 1-prob1_1))
 
 
-                    psi_set_1.append(psi_1)
-                    psi_set_2.append(psi_2)
+            #         psi_set_1.append(psi_1)
+            #         psi_set_2.append(psi_2)
                      
-                    if i<N/2:
-                        s_set_1.append(s_1)
-                        s_set_2.append(s_2)
-                    else:
-                        s_set_1.append(t_s_1)
-                        s_set_2.append(t_s_2)
+            #         if i<N/2:
+            #             s_set_1.append(s_1)
+            #             s_set_2.append(s_2)
+            #         else:
+            #             s_set_1.append(t_s_1)
+            #             s_set_2.append(t_s_2)
                         
                     
-                    t_s_set_1.append(t_s_1)
-                    t_s_set_2.append(t_s_2)
+            #         t_s_set_1.append(t_s_1)
+            #         t_s_set_2.append(t_s_2)
+            # last_w1 = mean_w_samples_1
                     
-            last_w1 = mean_w_samples_1
+                t+=1
+                    
                     
 
 
@@ -365,60 +400,69 @@ def robust_batch(method, N, M, b):
         w_sampler.y = np.array(s_set).reshape(-1,1)
         w_samples = w_sampler.sample(M)
             
-        w_sampler_1.A = psi_set_1
-        w_sampler_1.y = np.array(s_set_1).reshape(-1,1)
-        w_samples_1 = w_sampler_1.sample(M)
+        # w_sampler_1.A = psi_set_1
+        # w_sampler_1.y = np.array(s_set_1).reshape(-1,1)
+        # w_samples_1 = w_sampler_1.sample(M)
         
-        w_sampler_2.A = psi_set_2
-        w_sampler_2.y = np.array(s_set_2).reshape(-1,1)
-        w_samples_2 = w_sampler_2.sample(M)
-        
-        w_sampler_s.A = psi_set_s
-        w_sampler_s.y = np.array(s_set_s).reshape(-1,1)
-        w_samples_s = w_sampler_s.sample(M)
+        # w_sampler_2.A = psi_set_2
+        # w_sampler_2.y = np.array(s_set_2).reshape(-1,1)
+        # w_samples_2 = w_sampler_2.sample(M)
 
+        w_sampler_r.A = psi_set_r
+        w_sampler_r.y = np.array(s_set_r).reshape(-1,1)
+        w_samples_r = w_sampler_r.sample(M)
+        
+        w_sampler_k.A = psi_set_k
+        w_sampler_k.y = np.array(s_set_k).reshape(-1,1)
+        w_samples_k = w_sampler_k.sample(M)
 
         mean_w_samples_o = np.mean(w_samples_o,axis=0)
         mean_w_samples = np.mean(w_samples,axis=0)
-        mean_w_samples_1 = np.mean(w_samples_1,axis=0)
-        mean_w_samples_2 = np.mean(w_samples_2,axis=0)
-        mean_w_samples_s = np.mean(w_samples_s,axis=0)
+        # mean_w_samples_1 = np.mean(w_samples_1,axis=0)
+        # mean_w_samples_2 = np.mean(w_samples_2,axis=0)
+        mean_w_samples_r = np.mean(w_samples_r,axis=0)
+        mean_w_samples_k = np.mean(w_samples_k,axis=0)
         
         
         current_w_o = mean_w_samples_o/np.linalg.norm(mean_w_samples_o)
         current_w = mean_w_samples/np.linalg.norm(mean_w_samples)
-        current_w_1 = mean_w_samples_1/np.linalg.norm(mean_w_samples_1)
-        current_w_2 = mean_w_samples_2/np.linalg.norm(mean_w_samples_2)
-        current_w_s = mean_w_samples_s/np.linalg.norm(mean_w_samples_s)
+        # current_w_1 = mean_w_samples_1/np.linalg.norm(mean_w_samples_1)
+        # current_w_2 = mean_w_samples_2/np.linalg.norm(mean_w_samples_2)
+        current_w_r = mean_w_samples_r/np.linalg.norm(mean_w_samples_r)
+        current_w_k = mean_w_samples_k/np.linalg.norm(mean_w_samples_k)
         
         
         m_o = np.dot(current_w_o, true_w)/(np.linalg.norm(current_w_o)*np.linalg.norm(true_w))
         m = np.dot(current_w, true_w)/(np.linalg.norm(current_w)*np.linalg.norm(true_w))
-        m_1 = np.dot(current_w_1, true_w)/(np.linalg.norm(current_w_1)*np.linalg.norm(true_w))
-        m_2 = np.dot(current_w_2, true_w)/(np.linalg.norm(current_w_2)*np.linalg.norm(true_w))
-        m_s = np.dot(current_w_s, true_w)/(np.linalg.norm(current_w_s)*np.linalg.norm(true_w))
-        
+        # m_1 = np.dot(current_w_1, true_w)/(np.linalg.norm(current_w_1)*np.linalg.norm(true_w))
+        # m_2 = np.dot(current_w_2, true_w)/(np.linalg.norm(current_w_2)*np.linalg.norm(true_w))
+        m_r = np.dot(current_w_r, true_w)/(np.linalg.norm(current_w_r)*np.linalg.norm(true_w))
+        m_k = np.dot(current_w_k, true_w)/(np.linalg.norm(current_w_k)*np.linalg.norm(true_w))
         
         
         estimate_w_o[ite].append(m_o)
         estimate_w[ite].append(m)
-        estimate_w_1[ite].append(m_1)
-        estimate_w_2[ite].append(m_2)
-        estimate_w_s[ite].append(m_s)
-        
-        
+        # estimate_w_1[ite].append(m_1)
+        # estimate_w_2[ite].append(m_2)
+        estimate_w_r[ite].append(m_s) #robust
+        estimate_w_k[ite].append(m_k) #kdpp
+         
+        corruption_ratio_base[ite].append(len(np.where(np.array(t_s_set) != np.array(s_set))[0])/len(s_set))
+        corruption_ratio_robust[ite].append(len(np.where(np.array(t_s_set_r) != np.array(s_set_r))[0])/len(s_set_r))        
+        corruption_ratio_kdpp[ite].append(len(np.where(np.array(t_s_set_k) != np.array(s_set_k))[0])/len(s_set_k))        
+       
         
         #print(selected_ids)
         #print(selected_ids_1)
         #print(selected_ids_2)
         
-        print(f"base corruption ratio = {1-(len(np.where(np.array(t_s_set) == np.array(s_set))[0])/len(s_set))}")
-        print(f"model1 corruption ratio = {1-(len(np.where(np.array(t_s_set_1) == np.array(s_set_1))[0])/len(s_set_1))}")
-        print(f"model2 corruption ratio = {1-(len(np.where(np.array(t_s_set_2) == np.array(s_set_2))[0])/len(s_set_2))}")
+        # (f"base corruption ratio = {1-(len(np.where(np.array(t_s_set) == np.array(s_set))[0])/len(s_set))}")
+        # print(f"model1 corruption ratio = {1-(len(np.where(np.array(t_s_set_1) == np.array(s_set_1))[0])/len(s_set_1))}")
+        # print(f"model2 corruption ratio = {1-(len(np.where(np.array(t_s_set_2) == np.array(s_set_2))[0])/len(s_set_2))}")
         
         
         
-        
+    
     
     # plot graph
         
@@ -430,21 +474,20 @@ def robust_batch(method, N, M, b):
     w1 = fg.add_subplot(323)
     w2 = fg.add_subplot(324)
     w3 = fg.add_subplot(325)
+    corruption_ratio = fg.add_subplot(326)
     
     
     
-    #plt.subplot(2, 2, 1)
     evaluate_metric.plot(b*np.arange(len(estimate_w[ite])), np.mean(np.array(estimate_w_o), axis=0), color='blue', label='oracle')
     evaluate_metric.plot(b*np.arange(len(estimate_w[ite])), np.mean(np.array(estimate_w), axis=0), color='violet', label='base')
-    evaluate_metric.plot(b*np.arange(len(estimate_w_1[ite])), np.mean(np.array(estimate_w_1), axis=0), color='green', label='model1')
-    evaluate_metric.plot(b*np.arange(len(estimate_w_1[ite])), np.mean(np.array(estimate_w_2), axis=0), color='orange', label='model2')
-    evaluate_metric.plot(b*np.arange(len(estimate_w_1[ite])), np.mean(np.array(estimate_w_s), axis=0), color='red', label='robust')
-    
+    #evaluate_metric.plot(b*np.arange(len(estimate_w_1[ite])), np.mean(np.array(estimate_w_1), axis=0), color='green', label='model1')
+    #evaluate_metric.plot(b*np.arange(len(estimate_w_1[ite])), np.mean(np.array(estimate_w_2), axis=0), color='orange', label='model2')
+    evaluate_metric.plot(b*np.arange(len(estimate_w_r[ite])), np.mean(np.array(estimate_w_r), axis=0), color='red', label='kdpp')
+    evaluate_metric.plot(b*np.arange(len(estimate_w_k[ite])), np.mean(np.array(estimate_w_k), axis=0), color='darkcyan', label='kdpp+greedy')
     evaluate_metric.set_ylabel('m')
     evaluate_metric.set_xlabel('N')
     evaluate_metric.set_title('evaluate metric')
     evaluate_metric.legend()
-    
     
         
     w0.plot(np.arange(N), target_w0)
@@ -470,7 +513,11 @@ def robust_batch(method, N, M, b):
     w3.set_xlabel('N')
     w3.set_ylabel('w3')
     w3.set_title('target w3')
-
+    corruption_ratio.plot(b*np.arange(len(corruption_ratio_base[ite])), np.mean(np.array(corruption_ratio_base), axis=0), color='violet', label='base')
+    corruption_ratio.plot(b*np.arange(len(corruption_ratio_base[ite])), np.mean(np.array(corruption_ratio_robust), axis=0), color='red', label='robust')
+    corruption_ratio.plot(b*np.arange(len(corruption_ratio_base[ite])), np.mean(np.array(corruption_ratio_kdpp), axis=0), color='darkcyan', label='kdpp')
+    corruption_ratio.set_title("corruption_ratio")    
+    
     plt.savefig('./outputs/robust_time_varying_w_output_1.png')
     plt.show()
  

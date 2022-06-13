@@ -15,6 +15,7 @@ import algos
 from scipy.stats import kde
 import pandas as pd
 import copy
+from scipy.stats import gaussian_kde
 
 
 # batch 에서 적은 entropy select 추가하기 전
@@ -115,8 +116,6 @@ def change_w_element(true_w):
     max_id = np.argmax(n_w)
     min_id = np.argmin(n_w)
     
-    
-    
     max_v = n_w[max_id]
     min_v = n_w[min_id]
     
@@ -132,7 +131,7 @@ def coteaching_batch():
     
     
     method = 'greedy'
-    N = 140
+    N = 180
     M = 1000
     b = 20
     e = 1
@@ -184,6 +183,7 @@ def coteaching_batch():
         
         #target_w = change_w_element(true_w)
         target_w=np.array([0.04, 0.21584, -0.7835038  ]) #ex1
+        
         #target_w=np.array([-4.4036, 0.2404, 0.2  ]) # perpendicular
         
 
@@ -194,15 +194,62 @@ def coteaching_batch():
         w_sampler_r = copy.deepcopy(w_sampler)
         w_sampler_k = copy.deepcopy(w_sampler)
         
+        w_samples = w_sampler.sample(M)
+        w_samples_k = w_sampler_k.sample(M)
+
         
         
-        #sampled w visualization
-        # w_samples = w_sampler.sample(M)
-        # df = pd.DataFrame(w_samples[:,0])
-        # df.plot(kind='density')
-        # plt.xlim([-1,1])
-        # plt.ylim([0,2])
-        # plt.show()
+        
+        #sampled w density visualization
+        
+        df1 = pd.DataFrame(w_samples[:,2])
+        df1.plot(kind='density')
+        plt.title('greedy')
+        plt.xlim([-1,1])
+        plt.ylim([0,5])
+        plt.xlabel('w2')
+        plt.show()
+
+        df1 = pd.DataFrame(w_samples_k[:,2])
+        df1.plot(kind='density')
+        plt.title('kdpp')
+        plt.xlim([-1,1])
+        plt.ylim([0,5])
+        plt.xlabel('w2')
+        plt.show()
+        
+        
+        
+        fg0 = plt.figure(figsize=(10,5))
+        ax0 = fg0.add_subplot(121)
+        ax1 = fg0.add_subplot(122)
+        
+        xy0 = np.vstack([w_samples[:,1],w_samples[:,2]])
+        z0 = gaussian_kde(xy0)(xy0)
+        idx0 = z0.argsort()
+        x0, y0, z0 = w_samples[:,1][idx0], w_samples[:,2][idx0], z0[idx0]
+
+        ax0.set_title('greedy')
+        ax0.scatter(x0, y0, c=z0, s=10, cmap='bone')
+        ax0.set_xlim([-1,1])
+        ax0.set_ylim([-1,1])
+        ax0.set_xlabel('w1')
+        ax0.set_ylabel('w2')
+        
+        xy1 = np.vstack([w_samples_k[:,1],w_samples_k[:,2]])
+        z1 = gaussian_kde(xy1)(xy1)
+        idx1 = z1.argsort()
+        x1, y1, z1 = w_samples_k[:,1][idx1], w_samples_k[:,2][idx1], z1[idx1]
+
+        ax1.set_title('diverse')
+        ax1.scatter(x1, y1, c=z1, s=10, cmap='bone')
+        ax1.set_xlim([-1,1])
+        ax1.set_ylim([-1,1])
+        ax1.set_xlabel('w1')
+        ax1.set_ylabel('w2')
+        
+        plt.tight_layout()
+        plt.show()
         
         oracle_psi_set = []
         psi_set = []
@@ -324,6 +371,56 @@ def coteaching_batch():
             #     target_w = change_w_element(target_w)
             
             
+            df1 = pd.DataFrame(w_samples[:,2])
+            df1.plot(kind='density')
+            plt.title('greedy')
+            plt.xlim([-1,1])
+            plt.ylim([0,5])
+            plt.xlabel('w2')
+            plt.show()
+            
+            df1 = pd.DataFrame(w_samples_k[:,2])
+            df1.plot(kind='density')
+            plt.title('kdpp')
+            plt.xlim([-1,1])
+            plt.ylim([0,5])
+            plt.xlabel('w2')
+            plt.show()
+        
+            
+            fg0 = plt.figure(figsize=(10,5))
+            ax0 = fg0.add_subplot(121)
+            ax1 = fg0.add_subplot(122)
+            
+            
+            xy0 = np.vstack([w_samples[:,1],w_samples[:,2]])
+            z0 = gaussian_kde(xy0)(xy0)
+            idx0 = z0.argsort()
+            x0, y0, z0 = w_samples[:,1][idx0], w_samples[:,2][idx0], z0[idx0]
+
+            ax0.set_title('greedy')
+            ax0.scatter(x0, y0, c=z0, s=10, cmap='bone')
+            ax0.set_xlim([-1,1])
+            ax0.set_ylim([-1,1])
+            ax0.set_xlabel('w1')
+            ax0.set_ylabel('w2')
+            
+            xy1 = np.vstack([w_samples_k[:,1],w_samples_k[:,2]])
+            z1 = gaussian_kde(xy1)(xy1)
+            idx1 = z1.argsort()
+            x1, y1, z1 = w_samples_k[:,1][idx1], w_samples_k[:,2][idx1], z1[idx1]
+
+            ax1.set_title('diverse')
+            ax1.scatter(x1, y1, c=z1, s=10, cmap='bone')
+            ax1.set_xlim([-1,1])
+            ax1.set_ylim([-1,1])
+            ax1.set_xlabel('w1')
+            ax1.set_ylabel('w2')
+            
+            plt.tight_layout()
+            
+            plt.show()
+            
             #sampled w visualization
             # df = pd.DataFrame(w_samples[:,0])
             # df.plot(kind='density')
@@ -391,7 +488,7 @@ def coteaching_batch():
                 psi_set_id_k = algos.point_kdpp(w_samples_k, b, data_psi_set)
                 
             else:
-                psi_set_id_r = algos.point_greedy(w_samples_r, b, data_psi_set)
+                psi_set_id_r = algos.point_medoids(w_samples_r, b, data_psi_set)
                 psi_set_id_k = algos.point_greedy(w_samples_k, b, data_psi_set)
                 
                 
@@ -701,8 +798,6 @@ def coteaching_batch():
     #evaluate_metric.plot(b*np.arange(len(estimate_w_1[ite])), np.mean(np.array(estimate_w_2), axis=0), color='orange', label='model2')
     evaluate_metric.plot(b*np.arange(len(estimate_w_r[ite])), np.mean(np.array(estimate_w_r), axis=0), color='red', label='robust')
     evaluate_metric.plot(b*np.arange(len(estimate_w_k[ite])), np.mean(np.array(estimate_w_k), axis=0), color='darkcyan', label='kdpp')
-    
-    
     evaluate_metric.set_ylabel('m')
     evaluate_metric.set_xlabel('N')
     evaluate_metric.set_title('evaluate metric')
@@ -731,9 +826,6 @@ def coteaching_batch():
     corruption_ratio.plot(b*np.arange(len(corruption_ratio_base[ite])), np.mean(np.array(corruption_ratio_base), axis=0), color='violet', label='base')
     corruption_ratio.plot(b*np.arange(len(corruption_ratio_base[ite])), np.mean(np.array(corruption_ratio_robust), axis=0), color='red', label='robust')
     corruption_ratio.plot(b*np.arange(len(corruption_ratio_base[ite])), np.mean(np.array(corruption_ratio_kdpp), axis=0), color='darkcyan', label='kdpp')
-    
-    evaluate_metric.set_xlabel('N')
-    evaluate_metric.legend()
     corruption_ratio.set_title("corruption_ratio")    
     
     #plt.savefig('./outputs/robust_time_varying_w_output_1.png')

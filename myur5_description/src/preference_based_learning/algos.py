@@ -163,6 +163,12 @@ def medoids(w_samples, b, B=150):
     M, C = kmedoids.kMedoids(D, b)
     return id_input[M]
 
+def m_kdpp(w_samples, b, B=150):
+    id_input, psi_set = select_top_candidates(w_samples, B)
+    kdpp_out,idxs = kdpp(_X=psi_set[:],_k=b)
+    
+    return id_input[idxs]
+
 def boundary_medoids(w_samples, b, B=150):
     id_input, psi_set = select_top_candidates(w_samples, B)
     #print(id_input)
