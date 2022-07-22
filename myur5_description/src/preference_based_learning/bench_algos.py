@@ -3,6 +3,47 @@ import scipy.optimize as opt
 from sklearn.metrics.pairwise import pairwise_distances
 import kmedoids
 from scipy.spatial import ConvexHull
+from scipy.spatial.distance import cdist
+import matplotlib.pyplot as plt
+
+def kernel_se(_X1,_X2,_hyp={'gain':1,'len':1,'noise':1e-8}):
+    hyp_gain = float(_hyp['gain'])**2
+    hyp_len  = 1/float(_hyp['len'])
+    pairwise_dists = cdist(_X2,_X2,'euclidean')
+    K = hyp_gain*np.exp(-pairwise_dists ** 2 / (hyp_len**2))
+    return K
+
+
+def kdpp(_X,_k):
+    # Select _n samples out of _X using K-DPP
+    n,d = _X.shape[0],_X.shape[1]
+    #mid_dist = np.median(cdist(_X,_X,'euclidean'))
+    mid_dist = 0.5
+    out,idx = np.zeros(shape=(_k,d)),[]
+    for i in range(_k):
+        if i == 0:
+            # output의 첫 index는 n 개의 point 중에 random 으로 1개를 고른다
+            rand_idx = np.random.randint(n)
+            idx.append(rand_idx) # append index
+            out[i,:] = _X[rand_idx,:] # append  inputs
+        else:
+            det_vals = np.zeros(n)
+            for j in range(n):
+                if j in idx:
+                    det_vals[j] = -np.inf
+                else:
+                    idx_temp = idx.copy()
+                    idx_temp.append(j)
+                    X_curr = _X[idx_temp,:]
+                    K = kernel_se(X_curr,X_curr,{'gain':1,'len':mid_dist,'noise':1e-4})
+                    det_vals[j] = np.linalg.det(K)
+            max_idx = np.argmax(det_vals)
+            idx.append(max_idx)
+            out[i,:] = _X[max_idx,:] # append  inputs
+    return out,idx
+
+
+
 
 def func_psi(psi_set, w_samples):
     # 모든 w와 모든 psi_set 과 dot 하기 위해 w_samples.T 쓰는 거 같음
@@ -76,6 +117,12 @@ def medoids(simulation_object, w_samples, b, B=200):
     D = pairwise_distances(psi_set, metric='euclidean')
     M, C = kmedoids.kMedoids(D, b)
     return inputs_set[M, :z], inputs_set[M, z:]
+
+def batch_kdpp(simulation_object, w_samples, b, B=200):
+    inputs_set, psi_set, _, _, z = select_top_candidates(simulation_object, w_samples, B)
+    kdpp_out,idxs = kdpp(_X=psi_set[:],_k=b)
+    
+    return inputs_set[idxs, :z], inputs_set[idxs, z:]
 
 def boundary_medoids(simulation_object, w_samples, b, B=200):
     inputs_set, psi_set, _, _, z = select_top_candidates(simulation_object, w_samples, B)

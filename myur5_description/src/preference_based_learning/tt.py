@@ -3,28 +3,23 @@ import matplotlib.pyplot as plt
 from scipy.stats import gaussian_kde
 
 # Generate fake data
-x = np.random.normal(size=1000)
-y = x * 3 + np.random.normal(size=1000)
 
-# Calculate the point density
-xy = np.vstack([x,y])
-z = gaussian_kde(xy)(xy)
+def sampleBernoulli(mean):
+    ''' function to obtain a sample from a Bernoulli distribution
 
-# Sort the points by density, so that the densest points are plotted last
-idx = z.argsort()
-x, y, z = x[idx], y[idx], z[idx]
+    Input:
+    mean -- mean of the Bernoulli
+    
+    Output:
+    sample -- sample (0 or 1)
+    '''
 
-fig, ax = plt.subplots()
+    if np.random.rand(1) < mean: return 1
+    else: return 0
+    
+    
 
-true_w = np.array([0.36071584, -0.4335038 ])
-target_w=np.array([0.21584, -0.7835038  ]) #ex1
-plt.scatter(target_w[0],target_w[1], s=220, c='orange')
-plt.scatter(true_w[0],true_w[1], s=220, c='blue')
 
-plt.xlim([-1,1])
-plt.ylim([-1,1])
-plt.xlabel('w1')
-plt.ylabel('w2')
-plt.tight_layout()
-plt.title('target w')
-plt.show()
+
+
+print(np.maximum([-1,2,4], [1,3,2]))

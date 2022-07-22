@@ -23,11 +23,23 @@ def compute_entropy(p):
     return np.sum(-p*np.log(p))/2
     
     
+def sampleBernoulli(mean):
+    ''' function to obtain a sample from a Bernoulli distribution
+
+    Input:
+    mean -- mean of the Bernoulli
+    
+    Output:
+    sample -- sample (0 or 1)
+    '''
+
+    if np.random.rand(1) < mean: return 1
+    else: return 0
 
 
 
-
-
+def mu(x, theta):
+    return 1/(1+np.exp(-np.dot(x, theta)))
 
 
 ## automatically update by calculating distance from true_w
@@ -52,7 +64,7 @@ def predict_feedback(psi_set, current_w):
 
 
 
-def bench_get_feedback(simulation_object, input_A, input_B, true_w):
+def bench_get_feedback(simulation_object, input_A, input_B, w, m="oracle"):
      
 
     
@@ -62,16 +74,31 @@ def bench_get_feedback(simulation_object, input_A, input_B, true_w):
     phi_B = simulation_object.get_features()
     psi = np.array(phi_A) - np.array(phi_B)
     s = 0
+    t_s = 0
     while s==0:
         
         
-        if np.dot(psi, true_w)>0:
-            s = 1
-        else:
-            s =-1
+        if m == "samling":
+        # stochasitic model
+            prefer_prob = mu(psi, w)
+            s = sampleBernoulli(prefer_prob)
+            if s == 0:
+                s=-1
+        
+        elif m == "oracle":
+        
+        # # oracle model
+            if np.dot(psi, w)>0:
+                s = 1
+            else:
+                s =-1
+            
+            
+            
+            
         # selection = input('A/B to watch, 1/2 to vote: ').lower()
         
-        
+
         
         
         
@@ -85,12 +112,13 @@ def bench_get_feedback(simulation_object, input_A, input_B, true_w):
         #     s = 1
         # elif selection == '2':
         #     s = -1
+        
+
     return psi, s
 
 
 
-
-def get_feedback(psi, w, true_w):
+def get_feedback(psi, w, m ="oracle"):
      
     t_s = 0
     s = 0
@@ -116,27 +144,25 @@ def get_feedback(psi, w, true_w):
     
     while s==0:
         
-        # oracle feedback
-        if np.dot(psi, w)>0:
-            s = 1
-        else:
-            s =-1 
-            
-        # probability model feedback
-        # if label==0:
-        #     s =1
-        # else:
-        #     s =-1
         
-    while t_s==0:
+        if m == "samling":
+            # stochasitic samling model
+            prefer_prob = mu(psi, w)
+            s = sampleBernoulli(prefer_prob)
+            if s == 0:
+                s=-1
         
-        # oracle feedback
-        if np.dot(psi, true_w)>0:
-            t_s = 1
-        else:
-            t_s =-1 
+        elif m == "oracle":
+        
+            # oracle model    
+            if np.dot(psi, w)>0:
+                s = 1
+            else:
+                s =-1
+ 
+        
 
-    return psi, s, t_s
+    return psi, s
 
 
 
@@ -280,6 +306,8 @@ def bench_run_algo(method, simulation_object, w_samples, b=10, B=200):
         return bench_algos.boundary_medoids(simulation_object, w_samples, b, B)
     elif method == 'successive_elimination':
         return bench_algos.successive_elimination(simulation_object, w_samples, b, B)
+    elif method == "kdpp":
+        return bench_algos.batch_kdpp(simulation_object, w_samples, b, B)
     elif method == 'random':
         return bench_algos.random(simulation_object, w_samples)
     else:
@@ -304,15 +332,15 @@ def perform_best(simulation_object, w, iter_count=10):
     for _ in range(iter_count):
         temp_res = opt.fmin_l_bfgs_b(func, x0=np.random.uniform(low=lower_ctrl_bound, high=upper_ctrl_bound, size=(u)),
                                     args=(simulation_object, w), bounds=simulation_object.ctrl_bounds, approx_grad=True)
-        print(temp_res[1])
         if temp_res[1] < opt_val:
             optimal_ctrl = temp_res[0]
             opt_val = temp_res[1]
-    simulation_object.set_ctrl(optimal_ctrl)
-    keep_playing = 'y'
-    while keep_playing == 'y':
-        keep_playing = 'u'
-        simulation_object.watch(1)
-        while keep_playing != 'n' and keep_playing != 'y':
-            keep_playing = input('Again? [y/n]: ').lower()
+    # simulation_object.set_ctrl(optimal_ctrl)
+    # keep_playing = 'y'
+    # while keep_playing == 'y':
+    #     keep_playing = 'u'
+    #     simulation_object.watch(1)
+    #     while keep_playing != 'n' and keep_playing != 'y':
+    #         keep_playing = input('Again? [y/n]: ').lower()
+    print(optimal_ctrl)
     return -opt_val

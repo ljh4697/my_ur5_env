@@ -1,16 +1,28 @@
 import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib.colors as colors
-from matplotlib import ticker, cm
+from regex import P
+from bandit_base import *
+import scipy.optimize as opt
+from D_PBL import PBL
+
+from bandit_base import GLUCB
 
 
-print(np.random.uniform(0,0.1))
+PBL = GLUCB()
 
-# plt.figure(figsize=(8,8))   
-# plt.title('training data')
-# plt.plot(point_x_class_0, point_y_class_0, 'o', color='blue', label='class = 0')
-# plt.plot(point_x_class_1, point_y_class_1, 'o', color='red', label='class = 1')
-# plt.axis('equal')
-# plt.legend()
-# plt.tight_layout()
-# plt.show()
+# # Test epsilon greedy strategy
+# empiricalMeans, V, n_a = ucb.epsilonGreedyBandit(nIterations=200)
+# print("\nepsilonGreedyBandit results")
+# print(empiricalMeans)
+# print(V)
+# print(n_a)
+
+
+# # Test UCB strategy
+# empiricalMeans,V , n_a= ucb.UCBbandit(nIterations=200)
+# print("\nUCBbandit results")
+# print(empiricalMeans)
+# print(V)
+# print(n_a)
+
+if __name__ == "__main__":
+    print(PBL.D_GLUCB(iter=400))

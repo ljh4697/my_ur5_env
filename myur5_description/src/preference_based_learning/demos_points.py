@@ -131,9 +131,9 @@ def coteaching_batch():
     
     
     method = 'greedy'
-    N = 180
-    M = 1000
-    b = 20
+    N = 100
+    M = 1500
+    b = 10
     e = 1
     
     if N % b != 0:
@@ -182,7 +182,7 @@ def coteaching_batch():
         
         
         #target_w = change_w_element(true_w)
-        target_w=np.array([0.04, 0.21584, -0.7835038  ]) #ex1
+        target_w=np.array([0.04, 0.231584, -0.835038  ]) #ex1
         
         #target_w=np.array([-4.4036, 0.2404, 0.2  ]) # perpendicular
         
@@ -202,21 +202,21 @@ def coteaching_batch():
         
         #sampled w density visualization
         
-        df1 = pd.DataFrame(w_samples[:,2])
-        df1.plot(kind='density')
-        plt.title('greedy')
-        plt.xlim([-1,1])
-        plt.ylim([0,5])
-        plt.xlabel('w2')
-        plt.show()
+        # df1 = pd.DataFrame(w_samples[:,2])
+        # df1.plot(kind='density')
+        # plt.title('greedy')
+        # plt.xlim([-1,1])
+        # plt.ylim([0,5])
+        # plt.xlabel('w2')
+        # plt.show()
 
-        df1 = pd.DataFrame(w_samples_k[:,2])
-        df1.plot(kind='density')
-        plt.title('kdpp')
-        plt.xlim([-1,1])
-        plt.ylim([0,5])
-        plt.xlabel('w2')
-        plt.show()
+        # df1 = pd.DataFrame(w_samples_k[:,2])
+        # df1.plot(kind='density')
+        # plt.title('kdpp')
+        # plt.xlim([-1,1])
+        # plt.ylim([0,5])
+        # plt.xlabel('w2')
+        # plt.show()
         
         
         
@@ -231,6 +231,7 @@ def coteaching_batch():
 
         ax0.set_title('greedy')
         ax0.scatter(x0, y0, c=z0, s=10, cmap='bone')
+        ax0.scatter(target_w[1],target_w[2], s=100, c='orange')
         ax0.set_xlim([-1,1])
         ax0.set_ylim([-1,1])
         ax0.set_xlabel('w1')
@@ -243,6 +244,7 @@ def coteaching_batch():
 
         ax1.set_title('diverse')
         ax1.scatter(x1, y1, c=z1, s=10, cmap='bone')
+        ax1.scatter(target_w[1],target_w[2], s=100, c='orange')
         ax1.set_xlim([-1,1])
         ax1.set_ylim([-1,1])
         ax1.set_xlabel('w1')
@@ -371,22 +373,25 @@ def coteaching_batch():
             #     target_w = change_w_element(target_w)
             
             
-            df1 = pd.DataFrame(w_samples[:,2])
-            df1.plot(kind='density')
-            plt.title('greedy')
-            plt.xlim([-1,1])
-            plt.ylim([0,5])
-            plt.xlabel('w2')
-            plt.show()
+            # df1 = pd.DataFrame(w_samples[:,2])
+            # df1.plot(kind='density')
+            # plt.title('greedy')
+            # plt.xlim([-1,1])
+            # plt.ylim([0,5])
+            # plt.xlabel('w2')
+            # plt.show()
             
-            df1 = pd.DataFrame(w_samples_k[:,2])
-            df1.plot(kind='density')
-            plt.title('kdpp')
-            plt.xlim([-1,1])
-            plt.ylim([0,5])
-            plt.xlabel('w2')
-            plt.show()
-        
+            # df1 = pd.DataFrame(w_samples_k[:,2])
+            # df1.plot(kind='density')
+            # plt.title('kdpp')
+            # plt.xlim([-1,1])
+            # plt.ylim([0,5])
+            # plt.xlabel('w2')
+            # plt.show()
+            
+            if i%(40)==0 and i <100:
+                target_w = copy.deepcopy(true_w)
+                
             
             fg0 = plt.figure(figsize=(10,5))
             ax0 = fg0.add_subplot(121)
@@ -400,6 +405,7 @@ def coteaching_batch():
 
             ax0.set_title('greedy')
             ax0.scatter(x0, y0, c=z0, s=10, cmap='bone')
+            ax0.scatter(target_w[1],target_w[2], s=100, c='orange')
             ax0.set_xlim([-1,1])
             ax0.set_ylim([-1,1])
             ax0.set_xlabel('w1')
@@ -412,6 +418,7 @@ def coteaching_batch():
 
             ax1.set_title('diverse')
             ax1.scatter(x1, y1, c=z1, s=10, cmap='bone')
+            ax1.scatter(target_w[1],target_w[2], s=100, c='orange')
             ax1.set_xlim([-1,1])
             ax1.set_ylim([-1,1])
             ax1.set_xlabel('w1')
@@ -429,8 +436,7 @@ def coteaching_batch():
             # plt.show()
         
             
-            if i%(60)==0 and i <100:
-                target_w = copy.deepcopy(true_w)
+
                 
 
             
@@ -668,7 +674,7 @@ def coteaching_batch():
             plt.tight_layout()
             
             plt.subplot(1,3,2)
-            plt.title('robust selection')
+            plt.title('medoids selection')
             plt.plot(point_class_0[:,0], point_class_0[:,1], 'o', color='lightblue', label='class = 0')
             plt.plot(point_class_1[:,0], point_class_1[:,1], 'o', color='lightgreen', label='class = 1')
             plt.plot(m_point[:, 1][d_bdry], m_point[:, 2][d_bdry], color='violet')
@@ -684,7 +690,7 @@ def coteaching_batch():
             plt.tight_layout()
 
             plt.subplot(1,3,3)
-            plt.title('kdpp selection')
+            plt.title('robust selection')
             plt.plot(point_class_0[:,0], point_class_0[:,1], 'o', color='lightblue', label='class = 0')
             plt.plot(point_class_1[:,0], point_class_1[:,1], 'o', color='lightgreen', label='class = 1')
             plt.plot(m_point[:, 1][d_bdry], m_point[:, 2][d_bdry], color='violet')
@@ -796,8 +802,8 @@ def coteaching_batch():
     evaluate_metric.plot(b*np.arange(len(estimate_w[ite])), np.mean(np.array(estimate_w), axis=0), color='violet', label='base')
     #evaluate_metric.plot(b*np.arange(len(estimate_w_1[ite])), np.mean(np.array(estimate_w_1), axis=0), color='green', label='model1')
     #evaluate_metric.plot(b*np.arange(len(estimate_w_1[ite])), np.mean(np.array(estimate_w_2), axis=0), color='orange', label='model2')
-    evaluate_metric.plot(b*np.arange(len(estimate_w_r[ite])), np.mean(np.array(estimate_w_r), axis=0), color='red', label='robust')
-    evaluate_metric.plot(b*np.arange(len(estimate_w_k[ite])), np.mean(np.array(estimate_w_k), axis=0), color='darkcyan', label='kdpp')
+    evaluate_metric.plot(b*np.arange(len(estimate_w_r[ite])), np.mean(np.array(estimate_w_r), axis=0), color='red', label='medoids')
+    evaluate_metric.plot(b*np.arange(len(estimate_w_k[ite])), np.mean(np.array(estimate_w_k), axis=0), color='darkcyan', label='kdpp-greedy')
     evaluate_metric.set_ylabel('m')
     evaluate_metric.set_xlabel('N')
     evaluate_metric.set_title('evaluate metric')

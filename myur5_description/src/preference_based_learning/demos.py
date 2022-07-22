@@ -1,3 +1,4 @@
+from sympy import arg
 from sampling import Sampler
 import algos
 import numpy as np
@@ -13,8 +14,11 @@ import control_planning_scene
 import scipy.optimize as opt
 import algos
 from scipy.stats import kde
-import pandas as pd
 import copy
+from bandit_base import GLUCB
+from scipy.optimize import fmin_slsqp
+
+
 
 #true_w = [0.29754784,0.03725074,0.00664673,0.80602143]
 true_w = np.random.rand(4)
@@ -48,7 +52,8 @@ def get_target_w(true_w, t):
     n_w = n_w/np.linalg.norm(n_w)
     return n_w
 
-
+def mu(x, theta):
+    return 1/(1+np.exp(-np.dot(x, theta)))
 
 def change_w_element(true_w):
     
@@ -68,9 +73,24 @@ def change_w_element(true_w):
     return n_w
 
 def robust_batch(method, N, M, b):
+
+    d = 4; 
+    gamma = 0.95
+    S = 1
+    L = 1
+    delta = 0.7
+    m = 1
+
+    regularized_lambda = 0.1
     
+
+    def regularized_log_likelihood(theta):
+
+        return -(np.sum(np.array(gamma**np.arange(t,0,-1))*(np.array(reward_s)*np.log(mu(actions_s, theta))
+                                                    +(1-np.array(reward_s))*np.log(1-mu(actions_s, theta))))-(regularized_lambda/2)*np.linalg.norm(theta)**2)
     
-    e = 5
+
+    e = 1
         
     
     if N % b != 0:
@@ -79,18 +99,13 @@ def robust_batch(method, N, M, b):
     B = 20*b
     data = np.load('../sampled_trajectories/normalized_psi_set.npz')
     data_psi_set = data['PSI_SET']
+    
+    actions = data_psi_set
 
 
     estimate_w_o = [[0]for i in range(e)]
     estimate_w = [[0]for i in range(e)]
-    #estimate_w_1 = [[0]for i in range(e)]
-    #estimate_w_2 = [[0]for i in range(e)]
-    estimate_w_r = [[0]for i in range(e)] #robust
-    estimate_w_k = [[0]for i in range(e)] #kdpp
-    
-    corruption_ratio_base = [[0]for i in range(e)]
-    corruption_ratio_robust = [[0]for i in range(e)]
-    corruption_ratio_kdpp = [[0]for i in range(e)]
+    estimate_w_d = [[0]for i in range(e)] #dpbl
 
 
     for ite in range(e):
@@ -105,59 +120,52 @@ def robust_batch(method, N, M, b):
         true_w = true_w/np.linalg.norm(true_w)
         
         target_w = change_w_element(true_w)
-        #target_w = np.random.rand(4)
-        #target_w = target_w/np.linalg.norm(target_w)
         
         #target_w=true_w
-        t = 1
+        t = 0
 
+        D_PBL= GLUCB(d=4)
+        
         w_sampler = Sampler(d)
         oracle_w_sampler = copy.deepcopy(w_sampler)
-        #w_sampler_1 = Sampler(d)
-        #w_sampler_2 = Sampler(d)
-        w_sampler_r = copy.deepcopy(w_sampler)
-        w_sampler_k = copy.deepcopy(w_sampler)
         
-        
+        reward_s = []
+        actions_s = []
         
         oracle_psi_set = []
         psi_set = []
-        psi_set_1 = []
-        psi_set_2 = []
-        psi_set_r = []
-        psi_set_k = []
-        
-        
         
         oracle_s_set = []
         s_set = []
-        s_set_r = []
-        
-        s_set_1 = []
-        s_set_2 = []
-        s_set_k = []
         
         t_s_set = []
-        t_s_set_r = []
+        t_s_set_d = []
         
-        t_s_set_1 = []
-        t_s_set_2 = []
-        t_s_set_k = []
         
+        hat_theta_t = []
+        base_theta_t = []
+        true_theta_t = []
         
         #initialize
         init_psi_id = np.random.randint(0, len(data_psi_set), b)
-        
         o_init_psi_id = init_psi_id
-        o_init_psi_id_s = init_psi_id
-        o_init_psi_id_k = init_psi_id
-        
-        
-        #init_psi_id_1 = np.random.randint(0, len(data_psi_set), int(b/2))
-        #init_psi_id_2 = np.random.randint(0, len(data_psi_set), int(b/2))
 
         
+        A_t = actions[np.random.randint(0, len(data_psi_set), 1)[0]]
+    
         for j in range(b):
+            # 
+            if t>0:
+                D_PBL.hat_theta_D = fmin_slsqp(regularized_log_likelihood, np.array([0, 0, 0, 0]), iprint=0)
+
+                D_PBL.D_rho = D_PBL.D_rho_delta(t)/35
+                
+                A_t = D_PBL.select_actions(actions)
+
+                
+            # update hat_theta
+            
+            
             # get_feedback : phi, psi, user's feedback 값을 구함
             #target_w = get_target_w(true_w, t)
             target_w0.append(target_w[0])
@@ -165,44 +173,33 @@ def robust_batch(method, N, M, b):
             target_w2.append(target_w[2])
             target_w3.append(target_w[3])
             
-            o_psi, _, o_s = get_feedback(data_psi_set[o_init_psi_id[j]], true_w, true_w)
-            psi, s, t_s = get_feedback(data_psi_set[init_psi_id[j]], target_w, true_w)
-            psi_r, s_r, t_s_r = get_feedback(data_psi_set[o_init_psi_id_s[j]], target_w, true_w)
-            psi_k, s_k, t_s_k = get_feedback(data_psi_set[o_init_psi_id_k[j]], target_w, true_w)
+            o_psi, o_s = get_feedback(data_psi_set[o_init_psi_id[j]], true_w)
+            psi, s = get_feedback(data_psi_set[init_psi_id[j]], target_w)
+
+            psi_d, r_d = get_feedback(A_t, target_w)
             
-            
+            r_d = mu(A_t, target_w)
+            #print(r_d)
+            #print(A_t)
+            # if r_d == 1:
+            #     r_d = 0.9
+            # else:
+            #     r_d = 0.1
             
             oracle_psi_set.append(o_psi)
             oracle_s_set.append(o_s)
             
             psi_set.append(psi)
             s_set.append(s)
-
-            psi_set_r.append(psi_r)
-            s_set_r.append(s_r)
             
-            psi_set_k.append(psi_k)
-            s_set_k.append(s_k)
+            reward_s.append(r_d)
+            actions_s.append(A_t)
             
-            t_s_set.append(t_s)
-            t_s_set_r.append(t_s_r)
-            t_s_set_k.append(t_s_k)
+            A_t = A_t.reshape(-1, 1)
+            
+            D_PBL.compute_w_t(A_t)
 
             
-            # if j<b/2:
-            #     psi_1, s_1, t_s_1 = get_feedback(data_psi_set[init_psi_id_2[j]], target_w, true_w)
-            #     psi_2, s_2, t_s_2 = get_feedback(data_psi_set[init_psi_id_1[j]], target_w, true_w)
-
-            #     psi_set_1.append(psi_1)
-            #     s_set_1.append(s_1)
-                
-            #     psi_set_2.append(psi_2)
-            #     s_set_2.append(s_2)
-                
-            #     t_s_set_1.append(t_s_1)
-            #     t_s_set_2.append(t_s_2)
-            
-
             t+=1
         i = b
         m = 0
@@ -216,64 +213,35 @@ def robust_batch(method, N, M, b):
             w_sampler.A = psi_set
             w_sampler.y = np.array(s_set).reshape(-1,1)
             w_samples = w_sampler.sample(M)
+
+            mean_w_samples_o = np.mean(w_samples_o,axis=0)
+            mean_w_samples = np.mean(w_samples,axis=0)
             
-            # w_sampler_1.A = psi_set_1
-            # w_sampler_1.y = np.array(s_set_1).reshape(-1,1)
-            # w_samples_1 = w_sampler_1.sample(M)
             
-            # w_sampler_2.A = psi_set_2
-            # w_sampler_2.y = np.array(s_set_2).reshape(-1,1)
-            # w_samples_2 = w_sampler_2.sample(M)
-            
-            w_sampler_r.A = psi_set_r
-            w_sampler_r.y = np.array(s_set_r).reshape(-1,1)
-            w_samples_r = w_sampler_r.sample(M)
-            
-            w_sampler_k.A = psi_set_k
-            w_sampler_k.y = np.array(s_set_k).reshape(-1,1)
-            w_samples_k = w_sampler_k.sample(M)
             
             if i%(60)==0 and i <100:
                 #target_w = true_w
                 target_w = change_w_element(target_w)
 
+            if i%30 ==0:
+    
+            
+                hat_theta_t.append(D_PBL.hat_theta_D)
+                base_theta_t.append(mean_w_samples)
+                true_theta_t.append(target_w)
+
             
             
-            mean_w_samples_o = np.mean(w_samples_o,axis=0)
-            mean_w_samples = np.mean(w_samples,axis=0)
-            # mean_w_samples_1 = np.mean(w_samples_1,axis=0)
-            # mean_w_samples_2 = np.mean(w_samples_2,axis=0)
-            mean_w_samples_r = np.mean(w_samples_r,axis=0)
-            mean_w_samples_k = np.mean(w_samples_k,axis=0)
-            
-            
-            current_o_w = mean_w_samples_o/np.linalg.norm(mean_w_samples_o)
-            current_w = mean_w_samples/np.linalg.norm(mean_w_samples)
-            # current_w_1 = mean_w_samples_1/np.linalg.norm(mean_w_samples_1)
-            # current_w_2 = mean_w_samples_2/np.linalg.norm(mean_w_samples_2)
-            current_w_s = mean_w_samples_r/np.linalg.norm(mean_w_samples_r)
-            current_w_k = mean_w_samples_k/np.linalg.norm(mean_w_samples_k)
-            
-            
-            
-            m_o = np.dot(current_o_w, true_w)/(np.linalg.norm(current_o_w)*np.linalg.norm(true_w))
-            m = np.dot(current_w, true_w)/(np.linalg.norm(current_w)*np.linalg.norm(true_w))
-            # m_1 = np.dot(current_w_1, true_w)/(np.linalg.norm(current_w_1)*np.linalg.norm(true_w))
-            # m_2 = np.dot(current_w_2, true_w)/(np.linalg.norm(current_w_2)*np.linalg.norm(true_w))
-            m_s = np.dot(current_w_s, true_w)/(np.linalg.norm(current_w_s)*np.linalg.norm(true_w))
-            m_k = np.dot(current_w_k, true_w)/(np.linalg.norm(current_w_k)*np.linalg.norm(true_w))
+            #m_o = np.dot(mean_w_samples_o, true_w)/(np.linalg.norm(mean_w_samples_o)*np.linalg.norm(true_w))
+            m = np.dot(mean_w_samples, target_w)/(np.linalg.norm(mean_w_samples)*np.linalg.norm(target_w))
+            m_d = np.dot(D_PBL.hat_theta_D, target_w)/(np.linalg.norm(D_PBL.hat_theta_D)*np.linalg.norm(target_w))
             
             
             
             
-            estimate_w_o[ite].append(m_o)
+            #estimate_w_o[ite].append(m_o)
             estimate_w[ite].append(m)
-            #estimate_w_1[ite].append(m_1)
-            #estimate_w_2[ite].append(m_2)
-            estimate_w_r[ite].append(m_s) #robust
-            estimate_w_k[ite].append(m_k) # kdpp
-            
-            
+            estimate_w_d[ite].append(m_d) # D_PBL
 
             print('Samples so far: ' + str(i))
             
@@ -282,111 +250,52 @@ def robust_batch(method, N, M, b):
             # run_algo :
             psi_set_id_o = run_algo(method, w_samples_o, b, B)
             psi_set_id = run_algo(method, w_samples, b, B)
-            # psi_set_id_1 = run_algo('medoids', w_samples_1, int(b/2), B)
-            # psi_set_id_2 = run_algo('medoids', w_samples_2, int(b/2), B)
-            # psi_set_id_s = run_algo('medoids', w_samples_r, b, B)
-            
-            if i < N/2:
-                #psi_set_id_1 = run_algo('medoids', w_samples_1, int(b/2), B)
-                #psi_set_id_2 = run_algo('medoids', w_samples_2, int(b/2), B)
-                psi_set_id_s = run_algo('kdpp', w_samples_r, b, B)
-                psi_set_id_k = run_algo('kdpp', w_samples_k, b, B)
-                
-                
-            else:
-                # psi_set_id_1 = run_algo(method, w_samples_1, int(b/2), B)
-                # psi_set_id_2 = run_algo(method, w_samples_2, int(b/2), B)
-                psi_set_id_s = run_algo('kdpp', w_samples_r, b, B)
-                psi_set_id_k = run_algo(method, w_samples_k, b, B)
-                
-            corruption_ratio_base[ite].append(len(np.where(np.array(t_s_set) != np.array(s_set))[0])/len(s_set))
-            corruption_ratio_robust[ite].append(len(np.where(np.array(t_s_set_r) != np.array(s_set_r))[0])/len(s_set_r))
-            corruption_ratio_kdpp[ite].append(len(np.where(np.array(t_s_set_k) != np.array(s_set_k))[0])/len(s_set_k))
 
-            corruption_label_base = []
-            corruption_label_robust = []
-            corruption_label_kdpp = []
             
             for j in range(b):
-        
+                
+                D_PBL.hat_theta_D = fmin_slsqp(regularized_log_likelihood, np.array([0, 0, 0, 0]), iprint=0)
+
+                D_PBL.D_rho = D_PBL.D_rho_delta(t)/35
+                
+                A_t = D_PBL.select_actions(actions)
+                
                 #target_w = get_target_w(true_w, t)
                 target_w0.append(target_w[0])
                 target_w1.append(target_w[1])
                 target_w2.append(target_w[2])
                 target_w3.append(target_w[3])
                 
-                o_psi, _, o_s = get_feedback(data_psi_set[psi_set_id_o[j]], true_w, true_w)
-                psi, s, t_s = get_feedback(data_psi_set[psi_set_id[j]], target_w, true_w)
-                psi_r, s_r, t_s_r = get_feedback(data_psi_set[psi_set_id_s[j]], target_w, true_w)
-                psi_k, s_k, t_s_k = get_feedback(data_psi_set[psi_set_id_k[j]], target_w, true_w)
-                
-                
+                o_psi, o_s = get_feedback(data_psi_set[psi_set_id_o[j]], true_w)
+                psi, s = get_feedback(data_psi_set[psi_set_id[j]], target_w)
+                psi_d, r_d = get_feedback(A_t, target_w)
+                r_d = mu(A_t, target_w)
+
+                #print(r_d)
+                #print(A_t)
+                        
+                # if r_d == 1:
+                #     r_d = 0.9
+                # else:
+                #     r_d = 0.1
+                    
                 oracle_psi_set.append(o_psi)
                 oracle_s_set.append(o_s)
                 
                 psi_set.append(psi)
                 s_set.append(s)
                 
-                psi_set_r.append(psi_r)
-                s_set_r.append(s_r)    
-                
-                psi_set_k.append(psi_k)
-                s_set_k.append(s_k)
+                reward_s.append(r_d)
                 
                 t_s_set.append(t_s)
-                t_s_set_r.append(t_s_r)
-                t_s_set_k.append(t_s_k)
                 
-                
-            #     if j<b/2:
+                actions_s.append(A_t)
+                A_t = A_t.reshape(-1, 1)
+                D_PBL.compute_w_t(A_t)
                     
-            #         psi_1, s_1, t_s_1 = get_feedback(data_psi_set[psi_set_id_2[j]], target_w, true_w)
-            #         psi_2, s_2, t_s_2 = get_feedback(data_psi_set[psi_set_id_1[j]], target_w, true_w)
 
-
-
-            #         prob1_1 = 1/(1+(np.exp(-s_1*np.dot(current_w_1, data_psi_set[psi_set_id_2[j]].T))))
-            #         prob1_2 = 1/(1+(np.exp(-s_1*np.dot(current_w_2, data_psi_set[psi_set_id_1[j]].T))))
-                    
-            #         #print(f"distance {np.linalg.norm(current_w_1-current_w_2)}")
-            #         #print(f"w2 {current_w_2}")
-                    
-            #         # 1 = prefer A, 0 = prefer B
-            #         if s_1 == 1:
-            #             z_1 = 1
-            #         else:
-            #             z_1 = 0
-                        
-            #         if s_2 == 1:
-            #             z_2 = 1
-            #         else:
-            #             z_2 = 0
-                    
-            #         # entropy 계산 추가
-            #         #print(f"{prob1_1}, {1-prob1_1}")
-                    
-            #         #sum_of_entropy += np.min((prob1_1, 1-prob1_1))
-
-
-            #         psi_set_1.append(psi_1)
-            #         psi_set_2.append(psi_2)
-                     
-            #         if i<N/2:
-            #             s_set_1.append(s_1)
-            #             s_set_2.append(s_2)
-            #         else:
-            #             s_set_1.append(t_s_1)
-            #             s_set_2.append(t_s_2)
-                        
-                    
-            #         t_s_set_1.append(t_s_1)
-            #         t_s_set_2.append(t_s_2)
-            # last_w1 = mean_w_samples_1
-                    
                 t+=1
                     
-                    
-
 
                 
                 
@@ -400,72 +309,29 @@ def robust_batch(method, N, M, b):
         w_sampler.y = np.array(s_set).reshape(-1,1)
         w_samples = w_sampler.sample(M)
             
-        # w_sampler_1.A = psi_set_1
-        # w_sampler_1.y = np.array(s_set_1).reshape(-1,1)
-        # w_samples_1 = w_sampler_1.sample(M)
-        
-        # w_sampler_2.A = psi_set_2
-        # w_sampler_2.y = np.array(s_set_2).reshape(-1,1)
-        # w_samples_2 = w_sampler_2.sample(M)
 
-        w_sampler_r.A = psi_set_r
-        w_sampler_r.y = np.array(s_set_r).reshape(-1,1)
-        w_samples_r = w_sampler_r.sample(M)
-        
-        w_sampler_k.A = psi_set_k
-        w_sampler_k.y = np.array(s_set_k).reshape(-1,1)
-        w_samples_k = w_sampler_k.sample(M)
 
         mean_w_samples_o = np.mean(w_samples_o,axis=0)
         mean_w_samples = np.mean(w_samples,axis=0)
-        # mean_w_samples_1 = np.mean(w_samples_1,axis=0)
-        # mean_w_samples_2 = np.mean(w_samples_2,axis=0)
-        mean_w_samples_r = np.mean(w_samples_r,axis=0)
-        mean_w_samples_k = np.mean(w_samples_k,axis=0)
+
         
         
-        current_w_o = mean_w_samples_o/np.linalg.norm(mean_w_samples_o)
-        current_w = mean_w_samples/np.linalg.norm(mean_w_samples)
-        # current_w_1 = mean_w_samples_1/np.linalg.norm(mean_w_samples_1)
-        # current_w_2 = mean_w_samples_2/np.linalg.norm(mean_w_samples_2)
-        current_w_r = mean_w_samples_r/np.linalg.norm(mean_w_samples_r)
-        current_w_k = mean_w_samples_k/np.linalg.norm(mean_w_samples_k)
+        
+       # m_o = np.dot(mean_w_samples_o, true_w)/(np.linalg.norm(mean_w_samples_o)*np.linalg.norm(true_w))
+        m = np.dot(mean_w_samples, target_w)/(np.linalg.norm(mean_w_samples)*np.linalg.norm(target_w))
+        m_d = np.dot(D_PBL.hat_theta_D, target_w)/(np.linalg.norm(D_PBL.hat_theta_D)*np.linalg.norm(target_w))
         
         
-        m_o = np.dot(current_w_o, true_w)/(np.linalg.norm(current_w_o)*np.linalg.norm(true_w))
-        m = np.dot(current_w, true_w)/(np.linalg.norm(current_w)*np.linalg.norm(true_w))
-        # m_1 = np.dot(current_w_1, true_w)/(np.linalg.norm(current_w_1)*np.linalg.norm(true_w))
-        # m_2 = np.dot(current_w_2, true_w)/(np.linalg.norm(current_w_2)*np.linalg.norm(true_w))
-        m_r = np.dot(current_w_r, true_w)/(np.linalg.norm(current_w_r)*np.linalg.norm(true_w))
-        m_k = np.dot(current_w_k, true_w)/(np.linalg.norm(current_w_k)*np.linalg.norm(true_w))
-        
-        
-        estimate_w_o[ite].append(m_o)
+       # estimate_w_o[ite].append(m_o)
         estimate_w[ite].append(m)
-        # estimate_w_1[ite].append(m_1)
-        # estimate_w_2[ite].append(m_2)
-        estimate_w_r[ite].append(m_s) #robust
-        estimate_w_k[ite].append(m_k) #kdpp
+        estimate_w_d[ite].append(m_d) # D_PBL
          
-        corruption_ratio_base[ite].append(len(np.where(np.array(t_s_set) != np.array(s_set))[0])/len(s_set))
-        corruption_ratio_robust[ite].append(len(np.where(np.array(t_s_set_r) != np.array(s_set_r))[0])/len(s_set_r))        
-        corruption_ratio_kdpp[ite].append(len(np.where(np.array(t_s_set_k) != np.array(s_set_k))[0])/len(s_set_k))        
-       
-        
-        #print(selected_ids)
-        #print(selected_ids_1)
-        #print(selected_ids_2)
-        
-        # (f"base corruption ratio = {1-(len(np.where(np.array(t_s_set) == np.array(s_set))[0])/len(s_set))}")
-        # print(f"model1 corruption ratio = {1-(len(np.where(np.array(t_s_set_1) == np.array(s_set_1))[0])/len(s_set_1))}")
-        # print(f"model2 corruption ratio = {1-(len(np.where(np.array(t_s_set_2) == np.array(s_set_2))[0])/len(s_set_2))}")
-        
-        
-        
-    
-    
+
     # plot graph
-        
+    hat_theta_t = np.array(hat_theta_t)
+    hat_theta_t/= np.linalg.norm(hat_theta_t)
+    base_theta_t = np.array(base_theta_t)
+    
     
     fg = plt.figure(figsize=(10,15))
     
@@ -474,16 +340,13 @@ def robust_batch(method, N, M, b):
     w1 = fg.add_subplot(323)
     w2 = fg.add_subplot(324)
     w3 = fg.add_subplot(325)
-    corruption_ratio = fg.add_subplot(326)
+    parameter_circle = fg.add_subplot(326)
     
     
     
-    evaluate_metric.plot(b*np.arange(len(estimate_w[ite])), np.mean(np.array(estimate_w_o), axis=0), color='blue', label='oracle')
-    evaluate_metric.plot(b*np.arange(len(estimate_w[ite])), np.mean(np.array(estimate_w), axis=0), color='violet', label='base')
-    #evaluate_metric.plot(b*np.arange(len(estimate_w_1[ite])), np.mean(np.array(estimate_w_1), axis=0), color='green', label='model1')
-    #evaluate_metric.plot(b*np.arange(len(estimate_w_1[ite])), np.mean(np.array(estimate_w_2), axis=0), color='orange', label='model2')
-    evaluate_metric.plot(b*np.arange(len(estimate_w_r[ite])), np.mean(np.array(estimate_w_r), axis=0), color='red', label='kdpp')
-    evaluate_metric.plot(b*np.arange(len(estimate_w_k[ite])), np.mean(np.array(estimate_w_k), axis=0), color='darkcyan', label='kdpp+greedy')
+    #evaluate_metric.plot(b*np.arange(len(estimate_w[ite])), np.mean(np.array(estimate_w_o), axis=0), color='blue', label='oracle')
+    evaluate_metric.plot(b*np.arange(len(estimate_w[ite])), np.mean(np.array(estimate_w), axis=0), color='orange', label='base')
+    evaluate_metric.plot(b*np.arange(len(estimate_w_d[ite])), np.mean(np.array(estimate_w_d), axis=0), color='red', label='D_PBL')
     evaluate_metric.set_ylabel('m')
     evaluate_metric.set_xlabel('N')
     evaluate_metric.set_title('evaluate metric')
@@ -513,11 +376,27 @@ def robust_batch(method, N, M, b):
     w3.set_xlabel('N')
     w3.set_ylabel('w3')
     w3.set_title('target w3')
-    corruption_ratio.plot(b*np.arange(len(corruption_ratio_base[ite])), np.mean(np.array(corruption_ratio_base), axis=0), color='violet', label='base')
-    corruption_ratio.plot(b*np.arange(len(corruption_ratio_base[ite])), np.mean(np.array(corruption_ratio_robust), axis=0), color='red', label='robust')
-    corruption_ratio.plot(b*np.arange(len(corruption_ratio_base[ite])), np.mean(np.array(corruption_ratio_kdpp), axis=0), color='darkcyan', label='kdpp')
-    corruption_ratio.set_title("corruption_ratio")    
-    
+
+    draw_circle = plt.Circle((0, 0), 1, fill=False, color='red', zorder=0)
+    parameter_circle.add_artist(draw_circle)
+    parameter_circle.set_title('Circle')
+    parameter_circle.set_xlim([-1.15, 1.15])
+    parameter_circle.set_ylim([-1.15, 1.15])
+
+    for i in range(len(hat_theta_t)):
+        if i == 0:
+            parameter_circle.scatter(true_theta_t[i][0], true_theta_t[i][2], marker='v', zorder=1, color='blue', label='true')
+        else:
+            parameter_circle.scatter(true_theta_t[i][0], true_theta_t[i][2], marker='v', zorder=1, color='blue')
+            
+        parameter_circle.annotate(str(i+1), xy=(true_theta_t[i][0],true_theta_t[i][2]),xytext=(10, 10), textcoords='offset pixels')
+
+    parameter_circle.plot(hat_theta_t[:,0], hat_theta_t[:,2], marker='D', zorder=2, color='red', linestyle='dashed', label='D_PBL')
+    parameter_circle.plot(base_theta_t[:,0], base_theta_t[:,2], marker='o', zorder=2, color='orange', linestyle='dashed', label='base')
+    parameter_circle.legend()        
+    parameter_circle.set_aspect(1)
+
+
     plt.savefig('./outputs/robust_time_varying_w_output_1.png')
     plt.show()
  
