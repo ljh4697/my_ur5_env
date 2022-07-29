@@ -22,4 +22,6 @@ def sampleBernoulli(mean):
 
 
 
-print(np.maximum([-1,2,4], [1,3,2]))
+a = 45
+
+print(str(a)+"ddd")

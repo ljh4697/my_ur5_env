@@ -2,16 +2,16 @@ from simulation_utils import create_env, perform_best
 import sys
 import numpy as np
 
-def find_opt_trj(simulation_object, w):
+def get_opt_features(simulation_object, w):
 
 
-    iter_count = 5 
+    iter_count = 2
     
-    data = np.load('ctrl_samples/' + simulation_object.name + '.npz')
-    actions = data['psi_set']
 
-    print(perform_best(simulation_object, w, iter_count))
+    best_score, best_trajectory = (perform_best(simulation_object, w, iter_count))
+    
+    simulation_object.set_ctrl(best_trajectory)
+    opt_features = simulation_object.get_features()
     #opt_trj = np.argmax(np.dot(actions, w))
-    
 
-    return 
+    return opt_features

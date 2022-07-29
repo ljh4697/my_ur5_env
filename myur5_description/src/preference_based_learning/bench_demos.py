@@ -8,7 +8,7 @@ import seaborn as sns
 import copy
 from bandit_base import GLUCB
 from scipy.optimize import fmin_slsqp
-from run_optimizer import find_opt_trj
+from run_optimizer import get_opt_features
 
 #true_w = [0.29754784,0.03725074,0.00664673,0.80602143]
 
@@ -36,16 +36,27 @@ def change_w_element(true_w):
     
     return n_w
 
-def batch(task, method, N, M, b):
-    gamma = 0.92
-    S = 1
-    L = 1.4
-    m = 1
-    regularized_lambda = 0.1
+def bench_experiment(task, method, N, b, DPB_params, batch_active_params , num_randomseeds=1):
+    
+    ''' DPB_params '''
+    
+    alpha = DPB_params["exploration_weight"] 
+    gamma = DPB_params["discounting_factor"] 
+    
+    S = DPB_params["param_U"] 
+    L = DPB_params["action_U"]
+    m = DPB_params["reward_U"]
+    regularized_lambda = DPB_params["regularized_lambda"]
+    
+    ''' batch_active_params'''
+    
+    M = batch_active_params["samples_num"] # 1000
+    ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+    ##############################################################
+    
+    turning_point = int(N/3) # param change point
     
     
-    turning_point = int(N/3)
-    tp = 0
     def regularized_log_likelihood(theta):
     
         return -(np.sum(np.array(gamma**np.arange(t,0,-1))*(np.array(reward_s)*np.log(mu(actions_s, theta))
@@ -59,13 +70,16 @@ def batch(task, method, N, M, b):
     def get_true_reward(action, param_star):
         return np.dot(action,param_star)
     
-    e = 1
+    e = num_randomseeds
     B = 20*b
+    
     if N % b != 0:
         print('N must be divisible to b')
         exit(0)
     
-    estimate_w_o = [[0]for i in range(e)]
+    
+    
+    '''evaluate metric arxive'''
     cosine_estimate_w = [[0]for i in range(e)]
     cosine_estimate_w_d = [[0]for i in range(e)] #
     
@@ -73,24 +87,25 @@ def batch(task, method, N, M, b):
     true_reward_w_d = [[0]for i in range(e)] #
     true_reward = [[0]for i in range(e)]
     
+    
+    
+    
+    
     simulation_object = create_env(task)
     
     # get psi set
-    data = np.load('ctrl_samples/' + simulation_object.name + '.npz')
+    data = np.load('/home/joonhyeok/catkin_ws/src/my_ur5_env/myur5_description/src/preference_based_learning/ctrl_samples/' + simulation_object.name + '.npz')
     actions = data['psi_set']
     #trajectory_set = data['inputs_set']
-    
-    
-    
-    
-    
-
     features_d = simulation_object.num_of_features
     d = features_d
+    
+    
     for ite in range(e):
-
+        tp = 0 # count change # of true param
+        t=0 # count iteration
         
-        # evaluate archive
+        
         s_set = []
         reward_s = []
         actions_s = []
@@ -103,27 +118,20 @@ def batch(task, method, N, M, b):
         hat_theta_t = []
         base_theta_t = []
         true_theta_t = []
-        # #
 
-        # initialize
+        # initialize theta_t^star
         
-
-        
-        # true_w = np.zeros(4)
-        # true_w[2] = 0.15 ; true_w[3] = 0.2
         true_w = list(np.random.rand(features_d))
-        
         true_w[0] = np.random.uniform(0,0.1)
         true_w[1] = np.random.uniform(0.9,0.99)
+        true_w[2] = 0.3
+        true_w[3] = 0.2
+        
         true_w = true_w/np.linalg.norm(true_w)
         target_w = change_w_element(true_w)
         
-        #print(simulation_object.ctrl_size)
-        #find_opt_trj(simulation_object, target_w)
         
-        D_PBL= GLUCB(d=features_d)
-        
-        
+        DPB = GLUCB(d=features_d)
         
         lower_input_bound = [x[0] for x in simulation_object.feed_bounds]
         upper_input_bound = [x[1] for x in simulation_object.feed_bounds]
@@ -131,13 +139,12 @@ def batch(task, method, N, M, b):
         w_sampler = Sampler(d)
         
         
- 
+        
+
+
+        # random select psi (initialization)
         inputA_set = np.random.uniform(low=2*lower_input_bound, high=2*upper_input_bound, size=(b, 2*simulation_object.feed_size))
         inputB_set = np.random.uniform(low=2*lower_input_bound, high=2*upper_input_bound, size=(b, 2*simulation_object.feed_size))
-        
-        
-        
-        t=0
         selected_actions = actions[np.random.randint(0, len(actions), 10)]
         
         
@@ -148,20 +155,14 @@ def batch(task, method, N, M, b):
             input_B = inputB_set[j]
             A_t = selected_actions[j]
             
-            # get_feedback : phi, psi, user's feedback 값을 구함
-            
+            # get user's feedback(label) 값을 구함
             psi, s = bench_get_feedback(simulation_object, input_A, input_B, target_w, m="samling")
             psi_d, r_d = get_feedback(A_t, target_w, m="samling")
             
             
             if r_d == -1:
                 r_d = 0
-            
-            
-            #true_reward_w[ite].append(get_true_reward(psi, target_w))
-            #true_reward_w_d[ite].append(get_true_reward(A_t, target_w))
-            #true_reward[ite].append(get_true_reward(opt_trj, target_w))
-            
+
             
             psi_set.append(psi)
             s_set.append(s)
@@ -170,7 +171,7 @@ def batch(task, method, N, M, b):
             actions_s.append(A_t)
             
             A_t = A_t.reshape(-1, 1)
-            D_PBL.compute_w_t(A_t)
+            DPB.compute_w_t(A_t)
             
             t+=1
         
@@ -182,7 +183,7 @@ def batch(task, method, N, M, b):
         
         while i < N:
             
-            D_PBL.hat_theta_D = fmin_slsqp(regularized_log_likelihood, np.zeros(d),
+            DPB.hat_theta_D = fmin_slsqp(regularized_log_likelihood, np.zeros(d),
                                 ieqcons=[ieq_const],
                                 iprint=0)
             
@@ -192,15 +193,17 @@ def batch(task, method, N, M, b):
 
             mean_w_samples = np.mean(w_samples,axis=0)
 
+
+
+
             if t%(turning_point)==0:
-                
                 ## change preference parameter (time-varying) ##
                 
-                print(D_PBL.hat_theta_D)
+                print(DPB.hat_theta_D)
                 print('-------------------------------')
-                hat_theta_t.append(D_PBL.hat_theta_D)
-                base_theta_t.append(mean_w_samples)
-                true_theta_t.append(target_w)
+                hat_theta_t.append(copy.deepcopy(DPB.hat_theta_D))
+                base_theta_t.append(copy.deepcopy(mean_w_samples))
+                true_theta_t.append(copy.deepcopy(target_w))
                 if tp == 0:
                     target_w = change_w_element(target_w)
                 elif tp == 1:
@@ -210,38 +213,46 @@ def batch(task, method, N, M, b):
                     target_w = target_w/np.linalg.norm(target_w)
                 
                 tp += 1    
+                
                 #opt_trj = find_opt_trj(simulation_object, target_w)
 
             
 
-            
+            # cosine metric m #
             m = np.dot(mean_w_samples, target_w)/(np.linalg.norm(mean_w_samples)*np.linalg.norm(target_w))
-            m_d = np.dot(D_PBL.hat_theta_D, target_w)/(np.linalg.norm(D_PBL.hat_theta_D)*np.linalg.norm(target_w))
-            
-            
+            m_d = np.dot(DPB.hat_theta_D, target_w)/(np.linalg.norm(DPB.hat_theta_D)*np.linalg.norm(target_w))
             
             cosine_estimate_w[ite].append(m)
             cosine_estimate_w_d[ite].append(m_d) #robust
+            
+            #true rewawrd metric#
+            base_opt_features = get_opt_features(simulation_object, mean_w_samples)
+            D_opt_features = get_opt_features(simulation_object, DPB.hat_theta_D)
+            true_opt_features = get_opt_features(simulation_object, target_w)  
 
+            true_reward_w[ite].append(np.dot(target_w, base_opt_features))
+            true_reward_w_d[ite].append(np.dot(target_w, D_opt_features))
+            true_reward[ite].append(np.dot(target_w, true_opt_features))
+            
+            
+            
+            
+            
+            
+            
             
             
             print('Samples so far: ' + str(i))
             
-            # run_algo : query 를 만드는 algorithm
+            # select psi (arm) by each algorithm
             inputA_set, inputB_set = bench_run_algo(method, simulation_object, w_samples, b, B)
-                
-            D_PBL.D_rho = D_PBL.D_rho_delta(t)/25
-            selected_actions = D_PBL.select_batch_actions(actions, b)
- 
+            
+            DPB.D_rho = DPB.D_rho_delta(t)*alpha
+            selected_actions = DPB.select_batch_actions(actions, b)
             for j in range(b):
                 
-
-
                 
-                
-                #A_t =D_PBL.select_actions(actions)
-                
-                
+                #A_t =DPB.select_actions(actions)
                 
                 input_A = inputA_set[j] ; input_B = inputB_set[j]
                 A_t = selected_actions[j]
@@ -251,10 +262,7 @@ def batch(task, method, N, M, b):
 
                 if r_d == -1:
                     r_d = 0
-                    
-                #true_reward_w[ite].append(get_true_reward(psi, target_w))
-                #true_reward_w_d[ite].append(get_true_reward(A_t, target_w))
-                #true_reward[ite].append(get_true_reward(opt_trj, target_w))
+
                     
                 psi_set.append(psi)
                 s_set.append(s)
@@ -263,17 +271,16 @@ def batch(task, method, N, M, b):
                     
                     
                 A_t = A_t.reshape(-1, 1)
-                D_PBL.compute_w_t(A_t)
+                DPB.compute_w_t(A_t)
                 
 
-                
                     
                 t+=1
                     
             i += b
         
         
-        D_PBL.hat_theta_D = fmin_slsqp(regularized_log_likelihood, np.zeros(d),
+        DPB.hat_theta_D = fmin_slsqp(regularized_log_likelihood, np.zeros(d),
                                         ieqcons=[ieq_const],
                                         iprint=0)
         
@@ -284,17 +291,34 @@ def batch(task, method, N, M, b):
         
         mean_w_samples = np.mean(w_samples, axis=0)
         
-        hat_theta_t.append(D_PBL.hat_theta_D)
-        base_theta_t.append(mean_w_samples)
-        true_theta_t.append(target_w)
+        hat_theta_t.append(copy.deepcopy(DPB.hat_theta_D))
+        base_theta_t.append(copy.deepcopy(mean_w_samples))
+        true_theta_t.append(copy.deepcopy(target_w))
 
+        # cosine similarity metric = m
         print('w-estimate = {}'.format(mean_w_samples/np.linalg.norm(mean_w_samples)))
         m = np.dot(mean_w_samples, target_w)/(np.linalg.norm(mean_w_samples)*np.linalg.norm(target_w))
-        m_d = np.dot(D_PBL.hat_theta_D, target_w)/(np.linalg.norm(D_PBL.hat_theta_D)*np.linalg.norm(target_w))
-        
+        m_d = np.dot(DPB.hat_theta_D, target_w)/(np.linalg.norm(DPB.hat_theta_D)*np.linalg.norm(target_w))
         cosine_estimate_w[ite].append(m)
-        cosine_estimate_w_d[ite].append(m_d) #robust
+        cosine_estimate_w_d[ite].append(m_d)
         
+        # true rewawrd metric
+        base_opt_features = get_opt_features(simulation_object, mean_w_samples)
+        D_opt_features = get_opt_features(simulation_object, DPB.hat_theta_D)
+        true_opt_features = get_opt_features(simulation_object, target_w)  
+
+        true_reward_w[ite].append(np.dot(target_w, base_opt_features))
+        true_reward_w_d[ite].append(np.dot(target_w, D_opt_features))
+        true_reward[ite].append(np.dot(target_w, true_opt_features))
+
+
+
+
+
+
+    ################################
+    # plot experiment result graph #
+    ################################
 
     hat_theta_t = np.array(hat_theta_t)
     base_theta_t = np.array(base_theta_t)
@@ -308,7 +332,7 @@ def batch(task, method, N, M, b):
     
     
     evaluate_metric.plot(b*np.arange(len(cosine_estimate_w[ite])), np.mean(np.array(cosine_estimate_w), axis=0), color='orange', label='base', alpha=0.8)
-    evaluate_metric.plot(b*np.arange(len(cosine_estimate_w_d[ite])), np.mean(np.array(cosine_estimate_w_d), axis=0), color='red', label='D_PBL', alpha=0.8)
+    evaluate_metric.plot(b*np.arange(len(cosine_estimate_w_d[ite])), np.mean(np.array(cosine_estimate_w_d), axis=0), color='red', label='DPB', alpha=0.8)
     evaluate_metric.set_ylabel('m')
     evaluate_metric.set_xlabel('N')
     evaluate_metric.set_title('cosine metric')
@@ -320,6 +344,7 @@ def batch(task, method, N, M, b):
     parameter_circle.set_xlim([-1.15, 1.15])
     parameter_circle.set_ylim([-1.15, 1.15])
 
+    
     for i in range(len(hat_theta_t)):
         if i == 0:
             parameter_circle.scatter(true_theta_t[i][0], true_theta_t[i][1], marker='v', zorder=1, color='blue', label='true')
@@ -328,24 +353,24 @@ def batch(task, method, N, M, b):
             
         parameter_circle.annotate(str(i+1), xy=(true_theta_t[i][0],true_theta_t[i][1]),xytext=(10, 10), textcoords='offset pixels')
 
-    parameter_circle.plot(hat_theta_t[:,0], hat_theta_t[:,1], marker='D', zorder=2, color='red', linestyle='dashed', label='D_PBL')
+    parameter_circle.plot(hat_theta_t[:,0], hat_theta_t[:,1], marker='D', zorder=2, color='red', linestyle='dashed', label='DPB')
     parameter_circle.plot(base_theta_t[:,0], base_theta_t[:,1], marker='o', zorder=2, color='orange', linestyle='dashed', label='base')
     parameter_circle.legend()
     parameter_circle.set_aspect(1)
 
 
     
-    true_reward_metric.plot(np.arange(len(true_reward_w[ite])), np.mean(np.array(true_reward_w), axis=0), color='orange', label='base')
-    true_reward_metric.plot(np.arange(len(true_reward_w_d[ite])), np.mean(np.array(true_reward_w_d), axis=0), color='red', label='D_PBL')
-    true_reward_metric.plot(np.arange(len(true_reward[ite])), np.mean(np.array(true_reward), axis=0), color='blue', label='true', linestyle='dashed')
+    true_reward_metric.plot(b*np.arange(len(true_reward_w[ite])), np.mean(np.array(true_reward_w), axis=0), color='orange', label='base')
+    true_reward_metric.plot(b*np.arange(len(true_reward_w_d[ite])), np.mean(np.array(true_reward_w_d), axis=0), color='red', label='DPB')
+    true_reward_metric.plot(b*np.arange(len(true_reward[ite])), np.mean(np.array(true_reward), axis=0), color='blue', label='true', linestyle='dashed')
     
     true_reward_metric.set_ylabel('m')
     true_reward_metric.set_xlabel('N')
     true_reward_metric.set_title('true reward metric')
     true_reward_metric.legend()
     
-    plt.savefig('./outputs/robust_time_varying_w_output_1.png')
-    plt.show()
+    plt.savefig('./outputs/' + str(N) +'_alpha_' + str(alpha) +'.png')
+    #plt.show()
 
 
 

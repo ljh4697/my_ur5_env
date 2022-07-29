@@ -24,5 +24,22 @@ PBL = GLUCB()
 # print(V)
 # print(n_a)
 
+
+def introduce(man):
+    print(man["name"])
+    print(man["age"])
+    
+
 if __name__ == "__main__":
-    print(PBL.D_GLUCB(iter=400))
+    #print(PBL.D_GLUCB(iter=400))
+    
+    
+    
+    
+    
+    A = {"name":"jh",
+         "age":12}
+    
+    
+    introduce(A)
+    

@@ -41,6 +41,8 @@ def true_param(t):
 class GLUCB(object):
     def __init__(self, d=2):
         
+        
+        ''' hyper parameter ###############################################'''
         self.regularized_lambda = 0.1
         
         self.epsilon = 0.2
@@ -51,9 +53,11 @@ class GLUCB(object):
         self.L = 1.4
         self.delta = 0.7
         self.m = 1
+        '''################################################################'''
+        
+        
         
         self.D_rho = 0
-        
         self.actions_s = []
         self.hat_theta_D = np.zeros(d)
         

@@ -342,5 +342,4 @@ def perform_best(simulation_object, w, iter_count=10):
     #     simulation_object.watch(1)
     #     while keep_playing != 'n' and keep_playing != 'y':
     #         keep_playing = input('Again? [y/n]: ').lower()
-    print(optimal_ctrl)
-    return -opt_val
+    return -opt_val, optimal_ctrl
