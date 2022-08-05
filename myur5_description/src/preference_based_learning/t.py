@@ -2,12 +2,12 @@ import numpy as np
 from regex import P
 from bandit_base import *
 import scipy.optimize as opt
-from D_PBL import PBL
+from my_ur5_env.myur5_description.src.preference_based_learning.D_PBL import PBL
 
 from bandit_base import GLUCB
 
 
-PBL = GLUCB()
+#PBL = GLUCB()
 
 # # Test epsilon greedy strategy
 # empiricalMeans, V, n_a = ucb.epsilonGreedyBandit(nIterations=200)
@@ -25,21 +25,9 @@ PBL = GLUCB()
 # print(n_a)
 
 
-def introduce(man):
-    print(man["name"])
-    print(man["age"])
-    
 
 if __name__ == "__main__":
     #print(PBL.D_GLUCB(iter=400))
     
     
-    
-    
-    
-    A = {"name":"jh",
-         "age":12}
-    
-    
-    introduce(A)
-    
+    print(np.random.seed(5))

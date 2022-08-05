@@ -123,7 +123,6 @@ def get_feedback(psi, w, m ="oracle"):
     t_s = 0
     s = 0
     
-    
     # define corruption ratio and select from uniform dist
     # p = np.random.uniform(0,1,1)
     # if p>0.2:

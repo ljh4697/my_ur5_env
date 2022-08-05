@@ -12,7 +12,10 @@ DPB_params = {
     "action_U":1.4,
     "param_U":1,
     "regularized_lambda":0.1,
-    "reward_U":1
+    "reward_U":1,
+    "delta":0.6,
+    "c_mu":1/5,
+    "k_mu":1/4
 }
 
 ############################
