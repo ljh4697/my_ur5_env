@@ -51,7 +51,7 @@ if __name__ == "__main__":
             t_th_w+=1
             
             
-        algo.update_param()
+        algo.update_param(t)
         actions = algo.select_batch_actions(t, b)
         
         

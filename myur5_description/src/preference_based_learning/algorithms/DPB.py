@@ -43,14 +43,15 @@ def true_param(t):
 
 class DPB_params_error(Exception):
     def __init__(self):
-        super().__init__('it\'s not proper PBB params keys')
+        super().__init__('it\'s not proper DPB params keys')
  
 class DPB(PBL_model):
     def __init__(self, simulation_object, DPB_params):
         super().__init__(simulation_object)
-        if list(DPB_params.keys()) != ["regularized_lambda", "c_mu", "k_mu",
+        print(list(DPB_params.keys()))
+        if list(DPB_params.keys()).sort() != ["regularized_lambda", "c_mu", "k_mu",
                                        "discounting_factor", "param_U", "action_U",
-                                       "delta", "reward_U", "exploration_weight"]:
+                                       "delta", "reward_U", "exploration_weight"].sort():
             raise DPB_params_error
         
         ''' hyper parameter ###############################################'''
@@ -140,6 +141,8 @@ class DPB(PBL_model):
 
 
     def update_param(self, t):
+        if t == 0:
+            return
         
         def regularized_log_likelihood(theta):
             

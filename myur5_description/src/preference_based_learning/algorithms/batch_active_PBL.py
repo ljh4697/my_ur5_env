@@ -38,7 +38,7 @@ class batch_active_PBL(PBL_model):
         
         
         
-    def update_param(self):
+    def update_param(self, t):
         self.w_sampler.A = self.actions_s
         self.w_sampler.y = np.array(self.reward_s).reshape(-1,1)
         self.w_samples = self.w_sampler.sample(self.M)

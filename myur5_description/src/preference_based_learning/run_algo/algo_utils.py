@@ -1,5 +1,7 @@
 from simulation_utils import create_env, get_feedback
 from algorithms.batch_active_PBL import batch_active_PBL
+from algorithms.DPB import DPB
+
 import numpy as np
 import copy
 ##### hyper param ############
@@ -66,7 +68,7 @@ def define_algo(task, algo_type):
         algo = batch_active_PBL(simulation_object, algo_params)
     elif algo_type =="DPB":
         algo_params = DPB_params
-        algo = batch_active_PBL(simulation_object, algo_params)
+        algo = DPB(simulation_object, algo_params)
         
     d = simulation_object.num_of_features
     true_w = timevarying_true_w(d)
