@@ -1,16 +1,31 @@
 import numpy as np
+from run_optimizer import get_opt_f
+
 
 def cosine_metric(w, true_w):
     
-    result = np.dot(w, true_w)/(np.linalg.norm(w)*np.linalg.norm(true_w))
+    cosine_similarity = np.dot(w, true_w)/(np.linalg.norm(w)*np.linalg.norm(true_w))
     
-    return result
+    return cosine_similarity
 
 
-def simple_regret(w, true_w):
+def simple_regret(predefined_features, w, true_w):
+    # true reward
+    opt_feature = get_opt_f(predefined_features, w)
+    true_opt_feature = get_opt_f(predefined_features, true_w)
     
-    return
+    simple_regret = np.dot(true_w, opt_feature)
+    true_reward = np.dot(true_w, true_opt_feature)
     
-def regret(w, true_w):
+    return simple_regret, true_reward
     
-    return
+def regret(predefined_features, A, true_w):
+    # regret
+    opt_feature = get_opt_f(predefined_features, true_w)
+    
+    opt_r = np.dot(true_w, opt_feature)
+    current_r = np.dot(true_w, A.T)
+    
+    
+    regret = opt_r-current_r
+    return np.sum(regret)

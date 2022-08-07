@@ -48,7 +48,6 @@ class DPB_params_error(Exception):
 class DPB(PBL_model):
     def __init__(self, simulation_object, DPB_params):
         super().__init__(simulation_object)
-        print(list(DPB_params.keys()))
         if list(DPB_params.keys()).sort() != ["regularized_lambda", "c_mu", "k_mu",
                                        "discounting_factor", "param_U", "action_U",
                                        "delta", "reward_U", "exploration_weight"].sort():
@@ -108,18 +107,21 @@ class DPB(PBL_model):
     def select_batch_actions(self, step, b):
         
         given_actions = self.PSI
-
+        z = self.simulation_object.feed_size
+        
         if step == 0:
-            selected_actions = given_actions[np.random.randint(0, len(given_actions), 10)]
+            random_initialize = np.random.randint(0, len(given_actions), 10)
             
+            selected_actions = given_actions[random_initialize]
+            inputs_set = self.inputs_set[random_initialize]
         else:
             self.D_rho = self.D_rho_delta(step)*self.alpha
             
             XW_rho = np.maximum(np.dot(given_actions, self.hat_theta_D ),-np.dot(given_actions, self.hat_theta_D )) + self.D_rho*np.sqrt(np.diag(np.matmul(np.matmul(given_actions, self.W_t), given_actions.T)))
             selected_actions = given_actions[np.argsort(-XW_rho)[:b]]
+            inputs_set = self.inputs_set[np.argsort(-XW_rho)[:b]]
             
-            
-        return selected_actions
+        return selected_actions, inputs_set[:, :z], inputs_set[:, z:]
         
         
     def generate_unitball_actions(self):
@@ -146,8 +148,8 @@ class DPB(PBL_model):
         
         def regularized_log_likelihood(theta):
             
-            return -(np.sum(np.array(self.gamma**np.arange(t,0,-1))*(np.array(self.reward_s)*np.log(mu(self.actions_s, theta))
-                                                        +(1-np.array(self.reward_s))*np.log(1-mu(self.actions_s, theta))))-(self.regularized_lambda/2)*np.linalg.norm(theta)**2)
+            return -(np.sum(np.array(self.gamma**np.arange(t,0,-1))*(np.array(self.reward_s)*np.log(mu(self.action_s, theta))
+                                                        +(1-np.array(self.reward_s))*np.log(1-mu(self.action_s, theta))))-(self.regularized_lambda/2)*np.linalg.norm(theta)**2)
     
 
         def ieq_const(theta):
@@ -191,7 +193,7 @@ class DPB(PBL_model):
         A_s = []
         reward_s = []
         g_reward_s = []
-        actions_s = []
+        action_s = []
         g_actions_s = []
         parameter_archive = []
         g_parameter_archive = []
@@ -207,8 +209,8 @@ class DPB(PBL_model):
         
         
         def regularized_log_likelihood(theta):
-            return -(np.sum(np.array(gamma**np.arange(t,0,-1))*(np.array(reward_s)*np.log(mu(actions_s, theta))
-                                                        +(1-np.array(reward_s))*np.log(1-mu(actions_s, theta))))-(self.regularized_lambda/2)*np.linalg.norm(theta)**2)
+            return -(np.sum(np.array(gamma**np.arange(t,0,-1))*(np.array(reward_s)*np.log(mu(action_s, theta))
+                                                        +(1-np.array(reward_s))*np.log(1-mu(action_s, theta))))-(self.regularized_lambda/2)*np.linalg.norm(theta)**2)
         
         def greedy_regularized_log_likelihood(theta):
             return -(np.sum((np.array(g_reward_s)*np.log(mu(g_actions_s, theta))
@@ -216,10 +218,10 @@ class DPB(PBL_model):
         
         def g_t_theta(theta):
             
-            T = len(actions_s)
+            T = len(action_s)
             left_g = np.zeros_like(theta)
             for s in range(T):
-                left_g += (gamma**(T-s))*mu(actions_s[s], theta)*actions_s[s]
+                left_g += (gamma**(T-s))*mu(action_s[s], theta)*action_s[s]
                 
             return (left_g + self.regularized_lambda*theta).reshape(-1, 1)
         
@@ -325,7 +327,7 @@ class DPB(PBL_model):
             
             cumulative_reward += reward
             
-            actions_s.append(A_t)
+            action_s.append(A_t)
             g_actions_s.append(greedy_A_t)
             
                 

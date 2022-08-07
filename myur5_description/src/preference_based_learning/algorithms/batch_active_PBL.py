@@ -1,7 +1,7 @@
 from algorithms.PBL_algorithm import PBL_model
 from sampling import Sampler
 import numpy as np
-from simulation_utils import bench_run_algo
+from simulation_utils import run_algo
 
 
 class batch_active_params_error(Exception):
@@ -16,7 +16,7 @@ class batch_active_PBL(PBL_model):
         
         super().__init__(simulation_object)
         
-        if list(batch_active_params.keys()) != ["method", "samples_num", "pre_greedy_nums"]:
+        if list(batch_active_params.keys()).sort() != ["method", "samples_num", "pre_greedy_nums"].sort():
             raise batch_active_params_error
         
         
@@ -39,7 +39,10 @@ class batch_active_PBL(PBL_model):
         
         
     def update_param(self, t):
-        self.w_sampler.A = self.actions_s
+        if t == 0:
+            return
+        
+        self.w_sampler.A = self.action_s
         self.w_sampler.y = np.array(self.reward_s).reshape(-1,1)
         self.w_samples = self.w_sampler.sample(self.M)
 
@@ -63,7 +66,7 @@ class batch_active_PBL(PBL_model):
             
             selected_actions[0, :] = np.array(phi_A) - np.array(phi_B)
         else:
-            inputA, inputB = bench_run_algo('nonbatch', self.simulation_object, self.w_samples, self.b, self.B)
+            inputA, inputB = run_algo('nonbatch', self.simulation_object, self.w_samples, self.b, self.B)
             
             selected_actions = np.zeros((1, self.d))
         
@@ -80,24 +83,33 @@ class batch_active_PBL(PBL_model):
     def select_batch_actions(self, step, b):
         lower_input_bound = [x[0] for x in self.simulation_object.feed_bounds]
         upper_input_bound = [x[1] for x in self.simulation_object.feed_bounds]
+        z = self.simulation_object.feed_size
         
         if step == 0:
-            inputA_set = np.random.uniform(low=2*lower_input_bound, high=2*upper_input_bound, size=(b, 2*self.simulation_object.feed_size))
-            inputB_set = np.random.uniform(low=2*lower_input_bound, high=2*upper_input_bound, size=(b, 2*self.simulation_object.feed_size))
 
-            selected_actions = np.zeros((b, self.d))
+            given_actions = self.PSI
+            random_initialize = np.random.randint(0, len(given_actions), 10)
             
-            for i in range(b):
+            selected_actions = given_actions[random_initialize]
+            inputs_set = self.inputs_set[random_initialize]
+
+            inputA_set, inputB_set = inputs_set[:, :z], inputs_set[:, z:]
+            # inputA_set = np.random.uniform(low=2*lower_input_bound, high=2*upper_input_bound, size=(b, 2*self.simulation_object.feed_size))
+            # inputB_set = np.random.uniform(low=2*lower_input_bound, high=2*upper_input_bound, size=(b, 2*self.simulation_object.feed_size))
+
+            # selected_actions = np.zeros((b, self.d))
             
-                self.simulation_object.feed(inputA_set[i])
-                phi_A = self.simulation_object.get_features()    
+            # for i in range(b):
                 
-                self.simulation_object.feed(inputB_set[i])
-                phi_B = self.simulation_object.get_features()
+            #     self.simulation_object.feed(inputA_set[i])
+            #     phi_A = self.simulation_object.get_features()    
                 
-                selected_actions[i, :] = np.array(phi_A) - np.array(phi_B)
+            #     self.simulation_object.feed(inputB_set[i])
+            #     phi_B = self.simulation_object.get_features()
+                
+            #     selected_actions[i, :] = np.array(phi_A) - np.array(phi_B)
         else:
-            inputA_set, inputB_set = bench_run_algo(self.method, self.simulation_object, self.w_samples, b, self.B)
+            inputA_set, inputB_set = run_algo(self.method, self.simulation_object, self.w_samples, b, self.B)
             
             selected_actions = np.zeros((b, self.d))
             
@@ -111,7 +123,7 @@ class batch_active_PBL(PBL_model):
                 
                 selected_actions[i, :] = np.array(phi_A) - np.array(phi_B)
         
-        return selected_actions
+        return selected_actions, inputA_set, inputB_set
     
     
     

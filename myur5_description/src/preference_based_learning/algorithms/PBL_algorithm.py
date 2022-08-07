@@ -11,13 +11,13 @@ class PBL_model(object):
         
         data = np.load('/home/joonhyeok/catkin_ws/src/my_ur5_env/myur5_description/src/preference_based_learning/ctrl_samples/' + self.simulation_object.name + '.npz')
         self.PSI = data['psi_set']
-        
+        self.inputs_set = data['inputs_set']
         features_data = np.load('/home/joonhyeok/catkin_ws/src/my_ur5_env/myur5_description/src/preference_based_learning/ctrl_samples/' + self.simulation_object.name + '_features'+'.npz')
         self.predefined_features = features_data['features']
         
         '''######################################################################'''
         
-        self.actions_s = []
+        self.action_s = []
         self.reward_s = []
     
     def update_param(self):

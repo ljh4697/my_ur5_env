@@ -71,6 +71,7 @@ def define_algo(task, algo_type):
         algo = DPB(simulation_object, algo_params)
         
     d = simulation_object.num_of_features
+    
     true_w = timevarying_true_w(d)
     
     
@@ -81,8 +82,8 @@ def timevarying_true_w(features_d):
     
         
     true_w = [np.random.rand(features_d)]
-    true_w[0][0] = np.random.uniform(0,0.1)
-    true_w[0][1] = np.random.uniform(0.9,0.99)
+    true_w[0][0] = np.random.uniform(0.9,0.99)
+    true_w[0][1] = np.random.uniform(0,0.1)
     true_w[0][2] = 0.3
     true_w[0][3] = 0.2
     true_w[0] = true_w[0]/np.linalg.norm(true_w[0])
