@@ -9,7 +9,7 @@ import copy
 batch_active_params = {
     "method":"greedy",
     "samples_num":1000,
-    "pre_greedy_nums":300
+    "pre_greedy_nums":600
 }
 
 ##############################
@@ -53,7 +53,7 @@ class NotDefinedAlgo(Exception):
         
 
 
-def define_algo(task, algo_type):
+def define_algo(task, algo_type, args, env_type):
     
     task = task.lower()
     
@@ -63,41 +63,103 @@ def define_algo(task, algo_type):
     
     simulation_object = create_env(task)
     
-    if algo_type =="batch_active_PBL":
-        algo_params = batch_active_params
-        algo = batch_active_PBL(simulation_object, algo_params)
-    elif algo_type =="DPB":
-        algo_params = DPB_params
-        algo = DPB(simulation_object, algo_params)
-        
     d = simulation_object.num_of_features
     
-    true_w = timevarying_true_w(d)
+    true_w = timevarying_true_w(task, d)
+    
+    if algo_type =="batch_active_PBL":
+        batch_active_params["method"] = args["BA_method"]
+        algo_params = batch_active_params
+        algo = batch_active_PBL(simulation_object, algo_params, env_type)
+        
+        
+    elif algo_type =="DPB":
+        DPB_params["exploration_weight"] = args["exploration_weight"]
+        DPB_params["delta"] = args["delta"]
+        DPB_params['discounting_factor'] = args["discounting_factor"]
+        DPB_params['regularized_lambda'] = args["regularized_lambda"]
+        
+        
+        algo_params = DPB_params
+        algo = DPB(simulation_object, algo_params, env_type)
+        
     
     
     return algo, true_w
 
 
-def timevarying_true_w(features_d):
+def timevarying_true_w(task, features_d):
+    
+
+        
+    if task == "tosser":
+        
+        true_w = [np.random.rand(features_d)]
+        true_w[0][2] = np.random.uniform(-0.9,-0.99)
+        true_w[0][3] = np.random.uniform(-0.9,-0.99)
+        true_w[0][0] = 0.3
+        true_w[0][1] = 0.2
+        true_w[0] = true_w[0]/np.linalg.norm(true_w[0])
+        
+        target_w = np.random.rand(features_d)
+        target_w[3] = np.random.uniform(0.9,0.99)
+        target_w[2] = np.random.uniform(0,0.1)
+        target_w[0] = 0.3
+        target_w[1] = 0.2
+        target_w = target_w/np.linalg.norm(target_w)
+        
+        true_w.append(target_w)
+        true_w.append(change_w_element(true_w[1]))
+        
+
+        
+    elif task == "lunarlander":
+            
+        true_w = [np.random.rand(features_d)]
+        true_w[0][0] = np.random.uniform(0.9,0.99)
+        true_w[0][1] = np.random.uniform(0,0.1)
+        true_w[0][2] = np.random.uniform(0.2 ,0.3)
+        true_w[0][3] = np.random.uniform(0.2 ,0.3)
+        true_w[0][4] = np.random.uniform(0.2 ,0.3)
+        true_w[0][5] = np.random.uniform(0.2 ,0.3)
+        
+        true_w[0] = true_w[0]/np.linalg.norm(true_w[0])
+        
+        true_w.append(change_w_element(true_w[0]))
+        
+        target_w = np.random.rand(features_d)
+        target_w[0] = np.random.uniform(0,0.1)
+        target_w[1] = np.random.uniform(0,0.1)
+        target_w[2] = np.random.uniform(0.2 ,0.3)
+        target_w[3] = np.random.uniform(0.2 ,0.3)
+        target_w[4] = np.random.uniform(0.2 ,0.3)
+        target_w[5] = np.random.uniform(0.2 ,0.3)
+        
+        target_w = target_w/np.linalg.norm(target_w)
+        print(target_w)
+        
+        true_w.append(target_w)
     
         
-    true_w = [np.random.rand(features_d)]
-    true_w[0][0] = np.random.uniform(0.9,0.99)
-    true_w[0][1] = np.random.uniform(0,0.1)
-    true_w[0][2] = 0.3
-    true_w[0][3] = 0.2
-    true_w[0] = true_w[0]/np.linalg.norm(true_w[0])
-    
-    true_w.append(change_w_element(true_w[0]))
-    
-    target_w = np.random.rand(features_d)
-    target_w[0] = np.random.uniform(-0.9,-0.99)
-    target_w[1] = np.random.uniform(-0.9,-0.99)
-    target_w[2] = 0.3
-    target_w[3] = 0.2
-    target_w = target_w/np.linalg.norm(target_w)
-    
-    true_w.append(target_w)
+    else:
+            
+        true_w = [np.random.rand(features_d)]
+        true_w[0][0] = np.random.uniform(0.9,0.99)
+        true_w[0][1] = np.random.uniform(0,0.1)
+        true_w[0][2] = 0.3
+        true_w[0][3] = 0.2
+        true_w[0] = true_w[0]/np.linalg.norm(true_w[0])
+        
+        true_w.append(change_w_element(true_w[0]))
+        
+        target_w = np.random.rand(features_d)
+        target_w[0] = np.random.uniform(-0.9,-0.99)
+        target_w[1] = np.random.uniform(-0.9,-0.99)
+        target_w[2] = 0.3
+        target_w[3] = 0.2
+        target_w = target_w/np.linalg.norm(target_w)
+        
+        true_w.append(target_w)
     
     
     return true_w

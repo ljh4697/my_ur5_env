@@ -38,6 +38,9 @@ def main():
 
     PHI_A = np.array(PHI_A)
     PHI_B = np.array(PHI_B)
+    
+    
+    
     PSI_SET = PHI_A - PHI_B
 
     #print(feature_map)
@@ -48,6 +51,7 @@ def main():
     print(PHI_A[0])
     print(PHI_B[0])
     print(PSI_SET[0])
+    
     
     np.savez("./sampled_trajectories/psi_set.npz", PHI_A=PHI_A, PHI_B=PHI_B, PSI_SET=PSI_SET)
 

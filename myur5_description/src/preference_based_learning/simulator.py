@@ -37,7 +37,7 @@ class Simulation(object):
 class MujocoSimulation(Simulation):
     def __init__(self, name, total_time=1000, recording_time=[0,1000]):
         super(MujocoSimulation, self).__init__(name, total_time=total_time, recording_time=recording_time)
-        self.model = load_model_from_path('mujoco_xmls/' + name + '.xml')
+        self.model = load_model_from_path('/home/joonhyeok/catkin_ws/src/my_ur5_env/myur5_description/src/preference_based_learning/mujoco_xmls/' + name + '.xml')
         self.sim = MjSim(self.model)
         self.initial_state = self.sim.get_state()
         self.input_size = len(self.sim.data.ctrl)
@@ -231,3 +231,6 @@ class DrivingSimulation(Simulation):
             self.viewer.run_modified(history_x=[self.robot_history_x, self.human_history_x], history_u=[self.robot_history_u, self.human_history_u])
         self.viewer.window.close()
         self.viewer = None
+        
+        
+        

@@ -50,10 +50,12 @@ import argparse
 from get_feature import featuremapping
 
 def main():
+    nt = args['num_trajectories']
+    
     pick_trajectory = list()
-    planning_trajectory = [[] for i in range(args['num_trajectories'])]
-    display_trajectory = [[] for i in range(args['num_trajectories'])]
-    trajectory_start = [[] for i in range(args['num_trajectories'])]
+    planning_trajectory = [[] for i in range(nt)]
+    display_trajectory = [[] for i in range(nt)]
+    trajectory_start = [[] for i in range(nt)]
     
 
 
@@ -101,7 +103,6 @@ def main():
 
     #input("press \"enter\" to cartesian path")
 
-
     pose_goal.position.x += 0.1
     
 
@@ -141,7 +142,7 @@ def main():
     if not os.path.isdir('sampled_trajectories'):
         os.mkdir('sampled_trajectories')
     
-    np.savez("./sampled_trajectories/pick_trajectories.npz" , plan=pick_trajectory)
+    np.savez("./sampled_trajectories/pick_trajectories_"+str(nt)+".npz" , plan=pick_trajectory)
     print("complete to save pick trajectories")
     
     
@@ -149,7 +150,7 @@ def main():
     #input("press \"enter\" to approach midpoint position")
 
     
-    for i in range(args['num_trajectories']):
+    for i in range(nt):
         #input("sampling trajectory")
 
         #print(planning_scene_1.get_current_joint_state())
@@ -245,17 +246,16 @@ def main():
         
         
     planning_trajectory=np.array(planning_trajectory, dtype=object)
-    np.savez("./sampled_trajectories/planning_trajectory.npz" , plan=planning_trajectory)
+    np.savez("./sampled_trajectories/planning_trajectory_" + str(nt)+ ".npz" , plan=planning_trajectory)
     display_trajectory=np.array(display_trajectory, dtype=object)
-    np.savez("./sampled_trajectories/display_trajectory.npz" , plan=display_trajectory)
+    np.savez("./sampled_trajectories/display_trajectory_" + str(nt) + ".npz" , plan=display_trajectory)
     trajectory_start=np.array(trajectory_start, dtype=object)
-    np.savez("./sampled_trajectories/trajectory_start.npz" , plan=trajectory_start)
+    np.savez("./sampled_trajectories/trajectory_start_" + str(nt) + ".npz" , plan=trajectory_start)
     
     
 if __name__ == "__main__":
     
 
-    
 
     ap = argparse.ArgumentParser()
     ap.add_argument("-n", "--num-trajectories", type=int, default=200,

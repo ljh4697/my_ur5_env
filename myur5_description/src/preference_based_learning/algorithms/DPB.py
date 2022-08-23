@@ -46,8 +46,8 @@ class DPB_params_error(Exception):
         super().__init__('it\'s not proper DPB params keys')
  
 class DPB(PBL_model):
-    def __init__(self, simulation_object, DPB_params):
-        super().__init__(simulation_object)
+    def __init__(self, simulation_object, DPB_params, env='simulated'):
+        super().__init__(simulation_object, env)
         if list(DPB_params.keys()).sort() != ["regularized_lambda", "c_mu", "k_mu",
                                        "discounting_factor", "param_U", "action_U",
                                        "delta", "reward_U", "exploration_weight"].sort():
@@ -114,14 +114,41 @@ class DPB(PBL_model):
             
             selected_actions = given_actions[random_initialize]
             inputs_set = self.inputs_set[random_initialize]
+            selected_ids = random_initialize
+            
+            for i in range(b):
+                self.compute_w_t(selected_actions[i])
+            
         else:
-            self.D_rho = self.D_rho_delta(step)*self.alpha
+            selected_actions = []
+            inputs_set = []
+            D_rho = self.D_rho_delta(step)*self.alpha
             
-            XW_rho = np.maximum(np.dot(given_actions, self.hat_theta_D ),-np.dot(given_actions, self.hat_theta_D )) + self.D_rho*np.sqrt(np.diag(np.matmul(np.matmul(given_actions, self.W_t), given_actions.T)))
-            selected_actions = given_actions[np.argsort(-XW_rho)[:b]]
-            inputs_set = self.inputs_set[np.argsort(-XW_rho)[:b]]
+            empirical_reward  =np.maximum(np.dot(given_actions, self.hat_theta_D ),-np.dot(given_actions, self.hat_theta_D )) 
+            #empirical_reward  = np.dot(given_actions, self.hat_theta_D)
             
-        return selected_actions, inputs_set[:, :z], inputs_set[:, z:]
+            
+            # for i in range(b):
+            #     XW_rho = empirical_reward + self.D_rho*np.sqrt(np.diag(np.matmul(np.matmul(given_actions, self.W_t), given_actions.T)))
+            #     argmax_action = given_actions[np.argmax(XW_rho)]
+            #     inputs_set = self.inputs_set[np.argsort(XW_rho)]
+                
+            #     selected_actions.append(argmax_action)
+            #     self.compute_w_t(argmax_action)
+            
+            # selected_actions = np.array(selected_actions)
+            
+            XW_rho = empirical_reward + D_rho*np.sqrt(np.diag(np.matmul(np.matmul(given_actions, self.W_t), given_actions.T)))
+            
+            selected_ids = np.argsort(-XW_rho)[:b]
+            selected_actions = given_actions[selected_ids]
+            inputs_set = self.inputs_set[selected_ids]
+            
+            
+        if self.simulation_object.name == "avoid":
+            return selected_actions, selected_ids, selected_ids
+        else:
+            return selected_actions, inputs_set[:, :z], inputs_set[:, z:]
         
         
     def generate_unitball_actions(self):
@@ -134,7 +161,7 @@ class DPB(PBL_model):
         
     def compute_w_t(self, A_t):
         
-        self.W_t = np.matmul(A_t, A_t.T) + self.gamma*self.W_t + (self.regularized_lambda/self.c_mu)*(1-self.gamma)*np.identity(self.d)
+        self.W_t = np.matmul(A_t, A_t.T) + self.gamma*self.W_t + self.regularized_lambda*(1-self.gamma)*np.identity(self.d)
 
     def compute_tilde_w_t(self, A_t):
         

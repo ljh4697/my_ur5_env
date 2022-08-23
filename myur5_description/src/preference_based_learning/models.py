@@ -2,6 +2,13 @@ from simulator import DrivingSimulation, GymSimulation, MujocoSimulation
 import numpy as np
 
 
+class Avoid(object):
+    def __init__(self):
+        self.num_of_features = 4
+        self.name = 'avoid'
+        self.feed_size = 0
+        
+
 
 class Driver(DrivingSimulation):
     def __init__(self, total_time=50, recording_time=[0,50]):

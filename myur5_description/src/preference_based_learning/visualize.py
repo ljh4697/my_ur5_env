@@ -132,7 +132,8 @@ class Visualizer(object):
         elif self.camera_center is not None:
             return np.asarray(self.camera_center[0:2])
         else:
-            return self.anim_x[self.main_car][0:2]
+            return self.cars[0].x[0:2]
+            ##return self.anim_x[self.main_car][0:2]
     def camera(self):
         o = self.center()
         gl.glOrtho(o[0]-1./self.magnify, o[0]+1./self.magnify, o[1]-1./self.magnify, o[1]+1./self.magnify, -1., 1.)
@@ -323,15 +324,49 @@ if __name__ == '__main__' and False:
     #vis.set_heat(-vis.cars[1].traj.gaussian()+vis.lanes[0].gaussian()+vis.lanes[1].gaussian()+vis.lanes[2].gaussian())
     vis.run()
 
+if __name__ == '__main__':
+    import lane
+    dyn = dynamics.CarDynamics(0.1)
+    vis = Visualizer(dyn.dt)
+    vis.lanes.append(lane.StraightLane([0., -1.], [0., 1.], 0.13))
+    vis.lanes.append(vis.lanes[0].shifted(1))
+    vis.lanes.append(vis.lanes[0].shifted(-1))
+    vis.cars.append(car.UserControlledCar(dyn, [0., 0., math.pi/2., .1]))
+    vis.cars.append(car.SimpleOptimizerCar(dyn, [0., 0.5, math.pi/2., 0.], color='red'))
+    r = -60.*vis.cars[0].linear.gaussian()
+    r = r + vis.lanes[0].gaussian()
+    r = r + vis.lanes[1].gaussian()
+    r = r + vis.lanes[2].gaussian()
+    r = r - 30.*vis.lanes[1].shifted(1).gaussian()
+    r = r - 30.*vis.lanes[2].shifted(-1).gaussian()
+    r = r + 30.*feature.speed(0.5)
+    r = r + 10.*vis.lanes[0].gaussian(10.)
+    r = r + .1*feature.control()
+    vis.cars[1].reward = r
+    vis.main_car = vis.cars[0]
+    vis.paused = True
+    vis.set_heat(r)
+    #vis.set_heat(vis.lanes[0].gaussian()+vis.lanes[1].gaussian()+vis.lanes[2].gaussian())
+    #vis.set_heat(-vis.cars[1].traj.gaussian()+vis.lanes[0].gaussian()+vis.lanes[1].gaussian()+vis.lanes[2].gaussian())
+    vis.run()
+
+
 if __name__ == '__main__' and len(sys.argv)==1:
-    import world as wrld
+    import world 
     import car
-    world = wrld.world2()
+    from world import World
+    world = World()
+    dyn = dynamics.CarDynamics(0.1)
+    robot = car.Car(dyn, [0., -0.3, np.pi/2., 0.4], color='orange')
+    human = car.Car(dyn, [0.17, 0., np.pi/2., 0.41], color='white')
+    world.cars.append(robot)
+    world.cars.append(human)
+
+    
     vis = Visualizer(0.1, name='replay')
     vis.use_world(world)
     vis.main_car = world.cars[0]
-    #vis.cars = []
-    #vis.cars.append(car.Car(world.cars[0].dyn,[-2., -2., 0., 0.], color='yellow'))
+    vis.cars = []
     vis.run()
 
 if __name__ == '__main__' and len(sys.argv)>1:

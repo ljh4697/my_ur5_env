@@ -3,6 +3,8 @@ import scipy.optimize as opt
 from sklearn.metrics.pairwise import pairwise_distances
 import kmedoids
 from scipy.spatial import ConvexHull
+import dpp_sampler
+
 
 def func_psi(psi_set, w_samples):
     # 모든 w와 모든 psi_set 과 dot 하기 위해 w_samples.T 쓰는 거 같음
@@ -67,6 +69,8 @@ def select_top_candidates(simulation_object, w_samples, B):
     f_values = f_values[id_input[0:B]]
     return inputs_set, psi_set, f_values, d, z
 
+
+
 def greedy(simulation_object, w_samples, b):
     inputs_set, _, _, _, z = select_top_candidates(simulation_object, w_samples, b)
     return inputs_set[:, :z], inputs_set[:, z:]
@@ -77,6 +81,13 @@ def medoids(simulation_object, w_samples, b, B=200):
     D = pairwise_distances(psi_set, metric='euclidean')
     M, C = kmedoids.kMedoids(D, b)
     return inputs_set[M, :z], inputs_set[M, z:]
+
+def dpp(simulation_object, w_samples, b, B=200, gamma=1):
+    inputs_set, psi_set, f_values, _, z = select_top_candidates(simulation_object, w_samples, B)
+
+    ids = dpp_sampler.sample_ids_mc(psi_set, -f_values, b, alpha=4, gamma=gamma, steps=0) # alpha is not important because it is greedy-dpp
+    return inputs_set[ids,:z], inputs_set[ids,z:]
+
 
 def boundary_medoids(simulation_object, w_samples, b, B=200):
     inputs_set, psi_set, _, _, z = select_top_candidates(simulation_object, w_samples, B)
@@ -113,9 +124,18 @@ def successive_elimination(simulation_object, w_samples, b, B=200):
         psi_set = np.delete(psi_set, delete_id, axis=0)
     return inputs_set[:,0:z], inputs_set[:,z:2*z]
 
-def random(simulation_object, w_samples):
-    lower_input_bound = [x[0] for x in simulation_object.feed_bounds]
-    upper_input_bound = [x[1] for x in simulation_object.feed_bounds]
-    input_A = np.random.uniform(low=2*lower_input_bound, high=2*upper_input_bound, size=(2*simulation_object.feed_size))
-    input_B = np.random.uniform(low=2*lower_input_bound, high=2*upper_input_bound, size=(2*simulation_object.feed_size))
-    return input_A, input_B
+def random(simulation_object, w_samples, b):
+    z = simulation_object.feed_size
+    
+    data = np.load('/home/joonhyeok/catkin_ws/src/my_ur5_env/myur5_description/src/preference_based_learning/ctrl_samples' +
+                '/' + simulation_object.name + '.npz')
+    inputs_set = data['inputs_set']
+    psi_set = data['psi_set']
+    
+    random_ids = np.random.randint(1, psi_set.shape[0], b)
+    
+    
+    inputs_set = inputs_set[random_ids]
+    psi_set = psi_set[random_ids]
+    
+    return inputs_set[:, :z], inputs_set[:, z:]

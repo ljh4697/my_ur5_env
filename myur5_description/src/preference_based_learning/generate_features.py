@@ -26,9 +26,20 @@ def generate_features(simulation_object, inputs_set):
         
         
     total_features = np.concatenate((features1, features2), axis=0)
-    
-    np.savez('/home/joonhyeok/catkin_ws/src/my_ur5_env/myur5_descripion/src/preference_based_learning/ctrl_samples/' + simulation_object.name + '_features'+'.npz', 
+    np.savez('/home/joonhyeok/catkin_ws/src/my_ur5_env/myur5_description/src/preference_based_learning/ctrl_samples/' + simulation_object.name + '_features'+'.npz', 
              features = total_features
             )
     
     return total_features
+
+
+
+if __name__ == "__main__":
+    task = 'lunarlander'
+    simulation_object = create_env(task)
+    data = np.load('/home/joonhyeok/catkin_ws/src/my_ur5_env/myur5_description/src/preference_based_learning/ctrl_samples' +
+                   '/' + simulation_object.name + '.npz')
+    inputs_set = data['inputs_set']
+    
+    generate_features(simulation_object, inputs_set)
+    
