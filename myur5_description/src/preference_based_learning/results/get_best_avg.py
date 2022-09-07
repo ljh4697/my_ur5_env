@@ -11,6 +11,7 @@ best_perform = str()
 second_perform = str()
 consine_best_score = 0
 second_best_score = 0
+third = 0
 task = 'tosser'
 
 save_path = f'{task}/DPB'
@@ -66,12 +67,17 @@ for param in avgparams_set:
     elif sum_cosine>second_best_score:
         second_best_score =consine_best_score
         second_perform = param
+        
+    elif sum_cosine>third:
+        third =consine_best_score
+        third_perform = param        
+        
     mean_cosine = []
 
 
 print(best_perform)
-
 print(second_perform)
+print(third_perform)
         
         
 # print(param)

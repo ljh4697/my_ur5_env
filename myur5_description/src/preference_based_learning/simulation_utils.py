@@ -153,14 +153,16 @@ def get_feedback(algo, input_A, input_B, psi, w, m ="oracle", human='simulated')
                 if selection == 'a':
                     algo.simulation_object.feed(input_A)
                     algo.simulation_object.watch(1)
-                    print(algo.simulation_object.get_trajectory()[0])
-                    print(algo.simulation_object.get_trajectory()[0][0])
-                    np.savez('./trajectory_ex/driver/tj1.npz',
+                    
+                    np.savez('./trajectory_ex/{}/tj1.npz'.format(algo.simulation_object.name),
                              human=np.array(algo.simulation_object.get_trajectory())[:, 0],
                              robot=np.array(algo.simulation_object.get_trajectory())[:, 1])
                 elif selection == 'b':
                     algo.simulation_object.feed(input_B)
                     algo.simulation_object.watch(1)
+                    np.savez('./trajectory_ex/{}/tj2.npz'.format(algo.simulation_object.name),
+                             human=np.array(algo.simulation_object.get_trajectory())[:, 0],
+                             robot=np.array(algo.simulation_object.get_trajectory())[:, 1])
                 elif selection == '1':
                     s = 1
                 elif selection == '2':

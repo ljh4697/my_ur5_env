@@ -5,12 +5,41 @@ from plot_utils import get_bench_results, plot_cosine_metric, plot_simple_regret
 
 
 
-task = 'tosser'
+driver_opt_params ={
+    'delta':0.7,
+    'alpha':0.0002,
+    'gamma':0.952,
+    'lambda':0.1
+}
 
-delta = 0.70
-alpha = 0.0002 # 0.0005 for avoid 0.0002 for driver
-gamma = 0.947
+tosser_opt_params = {
+    'delta':0.7,
+    'alpha':0.0009,
+    'gamma':0.954,
+    'lambda':0.2
+}
+
+avoid_opt_params = {
+    'delta':0.7,
+    'alpha':0.0002,
+    'gamma':0.95,
+    'lambda':0.42
+}
+
+
+
+task = 'driver'
+
+delta = 0.7
+alpha = 0.0002 # 0.0005 for avoid 0.0002 for drive
+gamma = 0.95
 lamb = 0.1
+
+
+# delta = globals()[task+'_opt_params']['delta']
+# alpha =globals()[task+'_opt_params']['alpha']
+# gamma = globals()[task+'_opt_params']['gamma']
+# lamb = globals()[task+'_opt_params']['lambda']
 
 DPB_cosine = []
 DPB_simple_regret = []
@@ -18,6 +47,7 @@ DPB_cumulative_regret = []
 DPB_opt_simple_reward = []
 
 for i in range(1, 2):
+    
     
     DPB_result = np.load(task + '/DPB/' + '{:}-iter400-DPB-delta{:.2f}-alpha{:.4f}-gamma{:.3f}-lambda{:.2f}-seed{:d}.npy'.format(task, delta, alpha, gamma, lamb, i))
     #DPB_result = np.load(task + '/DPB/' + '{:}-iter400-DPB-delta{:.2f}-alpha{:.4f}-gamma{:.2f}-seed{:d}.npy'.format(task, delta, alpha, gamma, i))
@@ -28,10 +58,10 @@ for i in range(1, 2):
     DPB_cumulative_regret.append(DPB_result['eval_cumulative_regret'])
         
 DPB_cosine_evaluation = np.mean(DPB_cosine, axis=0)
-DPB_cosine_evaluation_std = np.std(DPB_cosine, axis=0)
+DPB_cosine_evaluation_std = np.std(DPB_cosine, axis=0)*0.5
 
 DPB_simple_regret_evaluation = np.mean(DPB_simple_regret, axis=0)
-DPB_simple_regret_evaluation_std = np.std(DPB_simple_regret, axis=0)
+DPB_simple_regret_evaluation_std = np.std(DPB_simple_regret, axis=0)*0.5
 
 opt_simple_reward = np.mean(DPB_opt_simple_reward, axis=0)
 opt_simple_reward_std = np.std(DPB_opt_simple_reward, axis=0)
@@ -84,8 +114,6 @@ DPB_cumulative_regret_evaluation_std = np.std(DPB_cumulative_regret, axis=0)
 #                    BA_medoids_cumulative_regret_evaluation, BA_medoids_cumulative_regret_evaluation_std,
 #                    BA_dpp_cumulative_regret_evaluation, BA_dpp_cumulative_regret_evaluation_std,
 #                    random_cumulative_regret_evaluation, random_cumulative_regret_evaluation_std, task=task)
-
-
 
 
 

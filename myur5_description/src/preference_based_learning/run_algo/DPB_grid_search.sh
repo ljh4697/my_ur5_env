@@ -37,24 +37,24 @@
 for i in $(seq 1 7); do
 
 
-    for g in $(seq 1 6); do
+    for g in $(seq 1 5); do
 
-        for d in $(seq 6 7); do
-
-
-            for s in $(seq 1 4); do
-
-            z=$( echo "scale=5; 0.004+0.0005*$i" | bc -l)
-            x=$( echo "scale=5; 0.92+0.005*$g" | bc -l)
-            c=$( echo "scale=5; $d/10" | bc -l)
-            v=$( echo "scale=5; 0.8+0.1*$s" | bc -l)
+        #for d in $(seq 6 7); do
 
 
-            python3 run_experiment.py -t tosser -w $z -g $x -d $c -l $v
+        for s in $(seq 1 4); do
 
-            done
+        z=$( echo "scale=5; 0.0005*$i" | bc -l)
+        x=$( echo "scale=5; 0.93+0.005*$g" | bc -l)
+        c=$( echo "scale=5; $d/10" | bc -l)
+        v=$( echo "scale=5; 0.1*2*$s" | bc -l)
+
+
+        python3 run_experiment.py -t tosser -w $z -g $x -d 0.7 -l $v -s 5
 
         done
+
+        #done
 
 
     done

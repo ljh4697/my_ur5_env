@@ -125,7 +125,7 @@ class DPB(PBL_model):
             D_rho = self.D_rho_delta(step)*self.alpha
             
             empirical_reward  =np.maximum(np.dot(given_actions, self.hat_theta_D ),-np.dot(given_actions, self.hat_theta_D )) 
-            #empirical_reward  = np.dot(given_actions, self.hat_theta_D)
+            #empirical_reward  = -np.dot(given_actions, self.hat_theta_D)
             
             
             # for i in range(b):

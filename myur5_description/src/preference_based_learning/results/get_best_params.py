@@ -22,8 +22,8 @@ for f in os.listdir(save_path):
     filepath = save_path + '/' + f
     
     n, s = f.split('seed')
-    if s != '1.npy':
-        continue
+    # if s != '5.npy':
+    #     continue
     
     if 'lambda' not in n:
         continue
@@ -32,11 +32,11 @@ for f in os.listdir(save_path):
         
         if f.split('-')[2] == "DPB":
             DPB_result = np.load(save_path + '/' + f)
-            if np.sum(DPB_result['eval_cosine']) > consine_best_score:
-                consine_best_score = np.sum(DPB_result['eval_cosine'])
+            if np.sum(DPB_result['eval_cosine'][9]) > consine_best_score:
+                consine_best_score = np.sum(DPB_result['eval_cosine'][9])
                 best_perform = f
-            elif consine_best_score > np.sum(DPB_result['eval_cosine']) and np.sum(DPB_result['eval_cosine']) > second_best_score:
-                second_best_score = np.sum(DPB_result['eval_cosine'])
+            elif consine_best_score > np.sum(DPB_result['eval_cosine'][9]) and np.sum(DPB_result['eval_cosine'][9]) > second_best_score:
+                second_best_score = np.sum(DPB_result['eval_cosine'][9])
                 secone_best_perform = f
                 
                 
