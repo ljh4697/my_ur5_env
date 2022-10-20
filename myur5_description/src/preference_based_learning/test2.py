@@ -1,11 +1,7 @@
-import numpy as np
+N, M = 3, 4
+
+map = [[0] * M for _ in range(N)]
+
+print(map)
 
 
-tr1 = np.load('./trajectory_ex/tosser/tj1.npz', allow_pickle=True)
-
-
-
-print(tr1['human'].shape)
-print(tr1['human'])
-print(tr1['robot'].shape)
-print(tr1['robot'])

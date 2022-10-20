@@ -65,7 +65,9 @@ def define_algo(task, algo_type, args, env_type):
     
     d = simulation_object.num_of_features
     
-    true_w = timevarying_true_w(task, d)
+    #true_w = timevarying_true_w(task, d)
+    
+    true_w = video_driver_true_w()
     
     if algo_type =="batch_active_PBL":
         batch_active_params["method"] = args["BA_method"]
@@ -88,11 +90,51 @@ def define_algo(task, algo_type, args, env_type):
     return algo, true_w
 
 
+
+
+def video_driver_true_w():
+    
+    true_w_ff= [0.15, -0.7, 0.7, 0.3] # 전진, 충돌 후 전진
+    true_w_ff = true_w_ff/np.linalg.norm(true_w_ff)
+    true_w_r = [0.7, 0.7, 0.8, 0.01] # 후진
+    true_w_r = true_w_r/np.linalg.norm(true_w_r)
+    true_w_f = [0.7, -0.2, 0.7, -0.06] # 전진, 피하면서 전진
+    true_w_f = true_w_f/np.linalg.norm(true_w_f)
+
+    timevarying_true_w = [true_w_ff, true_w_r, true_w_f]
+    
+    return timevarying_true_w
+
+
+def video_avoid_true_w():
+    true_w = [0.7, -0.2, 0.7, -0.06]
+    true_w = true_w/np.linalg.norm(true_w)
+
+    timevarying_true_w = [true_w, true_w, true_w]
+    
+    return timevarying_true_w
+
+def video_tosser_true_w():
+    
+    true_w_green = [0.1,0.03725074,0.00664673,0.80602143] #(green)
+    true_w_green = true_w_green/np.linalg.norm(true_w_green)
+    true_w_red = [0.01, 0.2 ,0.1, 0.30602143] #(red)
+    true_w_red = true_w_red/np.linalg.norm(true_w_red)
+    true_w_green_flips = [0.1,0.03725074,0.2664673,0.80602143] #(green with large flips)
+    true_w_green_flips = true_w_green_flips/np.linalg.norm(true_w_green_flips)
+
+    
+    timevarying_true_w = [true_w_green , true_w_red, true_w_green_flips]
+    
+    return timevarying_true_w
+
 def timevarying_true_w(task, features_d):
     
 
         
     if task == "tosser":
+        
+        
         
         true_w = [np.random.rand(features_d)]
         true_w[0][2] = np.random.uniform(-0.99,-0.9)
@@ -131,6 +173,8 @@ def timevarying_true_w(task, features_d):
         target_w[3] = 0.2
         target_w = target_w/np.linalg.norm(target_w)
         
+        
+
         true_w.append(target_w)
     
 
@@ -182,7 +226,7 @@ def timevarying_true_w(task, features_d):
         target_w[2] = 0.3
         target_w[3] = 0.2
         target_w = target_w/np.linalg.norm(target_w)
-        
+
         true_w.append(target_w)
     
     

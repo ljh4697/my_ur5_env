@@ -25,16 +25,21 @@ avoid_opt_params = {
     'gamma':0.95,
     'lambda':0.42
 }
-
+v_tosser_opt_params = {
+    'delta':0.7,
+    'alpha':0.0009,
+    'gamma':0.954,
+    'lambda':0.19,
+    'seed':4
+}
 
 
 task = 'driver'
 
 delta = 0.7
 alpha = 0.0002 # 0.0005 for avoid 0.0002 for drive
-gamma = 0.95
+gamma = 0.952
 lamb = 0.1
-
 
 # delta = globals()[task+'_opt_params']['delta']
 # alpha =globals()[task+'_opt_params']['alpha']
@@ -46,10 +51,10 @@ DPB_simple_regret = []
 DPB_cumulative_regret = []
 DPB_opt_simple_reward = []
 
-for i in range(1, 2):
+for i in range(3, 4):
     
     
-    DPB_result = np.load(task + '/DPB/' + '{:}-iter400-DPB-delta{:.2f}-alpha{:.4f}-gamma{:.3f}-lambda{:.2f}-seed{:d}.npy'.format(task, delta, alpha, gamma, lamb, i))
+    DPB_result = np.load(task + '/DPB/' + 'v_{:}-iter400-DPB-delta{:.2f}-alpha{:.4f}-gamma{:.3f}-lambda{:.2f}-seed{:d}.npy'.format(task, delta, alpha, gamma, lamb, i))
     #DPB_result = np.load(task + '/DPB/' + '{:}-iter400-DPB-delta{:.2f}-alpha{:.4f}-gamma{:.2f}-seed{:d}.npy'.format(task, delta, alpha, gamma, i))
 
     DPB_cosine.append(DPB_result['eval_cosine'])

@@ -22,8 +22,8 @@ if __name__ == "__main__":
     ap.add_argument('-b', "--num-batch", type=int, default=10,
                     help="# of batch")
     ap.add_argument('-s' ,'--seed',  type=int, default=1, help='A random seed')
-    ap.add_argument('-w' ,'--exploration-weight',  type=float, default=0.03, help='DPB hyperparameter exploration weight')
-    ap.add_argument('-g' ,'--discounting-factor',  type=float, default=0.92, help='DPB hyperparameter discounting factor')
+    ap.add_argument('-w' ,'--exploration-weight',  type=float, default=0.0002, help='DPB hyperparameter exploration weight')
+    ap.add_argument('-g' ,'--discounting-factor',  type=float, default=0.952, help='DPB hyperparameter discounting factor')
     ap.add_argument('-d' ,'--delta',  type=float, default=0.7, help='DPB hyperparameter delta')
     ap.add_argument('-l' ,'--regularized-lambda',  type=float, default=0.1, help='DPB regularized lambda')
     ap.add_argument('-bm' ,'--BA-method',  type=str, default='greedy', help='method of batch active')

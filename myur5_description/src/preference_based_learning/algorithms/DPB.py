@@ -5,6 +5,7 @@ from scipy.optimize import fmin_slsqp
 import matplotlib.pyplot as plt 
 from tqdm import trange
 from algorithms.PBL_algorithm import PBL_model
+import time
 
 
 def mu(x, theta):
@@ -60,7 +61,7 @@ class DPB(PBL_model):
         self.c_mu = DPB_params["c_mu"] ; self.k_mu = DPB_params["k_mu"]
         self.gamma = DPB_params["discounting_factor"]
         self.S = DPB_params["param_U"] 
-        self.L = DPB_params["action_U"]
+        self.L = DPB_params["action_U"] # D = L
         self.delta = DPB_params["delta"]
         self.m = DPB_params["reward_U"]
         self.alpha = DPB_params["exploration_weight"] 
@@ -71,7 +72,11 @@ class DPB(PBL_model):
         self.D_rho = 0
         self.hat_theta_D = np.zeros(simulation_object.num_of_features)
         
-        self.W_t = (self.regularized_lambda/self.c_mu)*np.identity(self.d)
+        
+        self.N_gamma = self.N_gamma_(self.gamma)
+        #self.V_t = (self.regularized_lambda/self.c_mu)*np.identity(self.d)
+        self.V_t = self.regularized_lambda*np.identity(self.d)
+        
         self.tilde_W_t = (self.regularized_lambda/self.c_mu)*np.identity(self.d)
 
 
@@ -86,6 +91,27 @@ class DPB(PBL_model):
 
 
 
+
+
+    def N_gamma_(self, gamma):
+        
+        return np.log(1/(1-gamma))/(1-gamma)
+        
+    def get_alpha_term_1(self):
+        
+        
+        return (self.S*(self.L)**2*self.gamma**(self.N_gamma))/(self.c_mu*np.sqrt(self.regularized_lambda)*(1-self.gamma))
+    
+    def get_alpha_term_2(self):
+        
+        return (np.sqrt(self.regularized_lambda)*self.S)/self.c_mu
+    
+    def get_alpha(self, t):
+        
+        return self.get_alpha_term_1() + self.get_alpha_term_2() + (1/self.c_mu)*np.sqrt(2*np.log(1/self.delta)+self.d*np.log(1+((self.L**2)*(1-self.gamma**t))/(self.d*self.regularized_lambda*(1-self.gamma))))
+        
+    
+    
         
     def select_single_action(self, step):
             
@@ -98,13 +124,26 @@ class DPB(PBL_model):
         else:
             self.D_rho = self.D_rho_delta(step)*self.alpha
             
-            ucb_scores = np.maximum(np.dot(given_actions, self.hat_theta_D ),-np.dot(given_actions, self.hat_theta_D )) + self.D_rho*np.sqrt(np.diag(np.matmul(np.matmul(given_actions, self.W_t), given_actions.T)))
+            ucb_scores = np.maximum(np.dot(given_actions, self.hat_theta_D ),-np.dot(given_actions, self.hat_theta_D )) + self.D_rho*np.sqrt(np.diag(np.matmul(np.matmul(given_actions, self.V_t), given_actions.T)))
             selected_actions = given_actions[np.argmax(ucb_scores)]
         
         return selected_actions
 
 
     def select_batch_actions(self, step, b):
+        
+        start = time.time()
+        
+        
+        def Matrix_Norm(A, V):
+            '''calculate ||A||_V'''
+            AV = np.matmul(A, V)
+            result = np.zeros(A.shape[0])
+            
+            for i in range(A.shape[0]):
+                result[i] = np.sqrt(np.dot(AV[i,:],A[i,:]))
+                
+            return result
         
         given_actions = self.PSI
         z = self.simulation_object.feed_size
@@ -117,32 +156,47 @@ class DPB(PBL_model):
             selected_ids = random_initialize
             
             for i in range(b):
-                self.compute_w_t(selected_actions[i])
+                self.compute_V_t(selected_actions[i])
             
         else:
             selected_actions = []
             inputs_set = []
-            D_rho = self.D_rho_delta(step)*self.alpha
+            selected_ids = []
+            #D_rho = self.D_rho_delta(step)*self.alpha   #existing method
+            D_rho = self.get_alpha(step)*self.alpha
+            
             
             empirical_reward  =np.maximum(np.dot(given_actions, self.hat_theta_D ),-np.dot(given_actions, self.hat_theta_D )) 
-            #empirical_reward  = -np.dot(given_actions, self.hat_theta_D)
             
-            
+            ''''''
             # for i in range(b):
-            #     XW_rho = empirical_reward + self.D_rho*np.sqrt(np.diag(np.matmul(np.matmul(given_actions, self.W_t), given_actions.T)))
-            #     argmax_action = given_actions[np.argmax(XW_rho)]
-            #     inputs_set = self.inputs_set[np.argsort(XW_rho)]
+            #     #XW_rho = empirical_reward + D_rho*np.sqrt(np.diag(np.matmul(np.matmul(given_actions, self.V_t), given_actions.T)))
+            #     XW_rho = empirical_reward + D_rho*Matrix_Norm(given_actions, self.V_t)
+            #     selected_ids.append(np.argmax(XW_rho))
+            #     self.compute_V_t(given_actions[np.argmax(XW_rho)])
+            #     #print(np.sort(empirical_reward))
+            #     print(np.sort(XW_rho))
                 
-            #     selected_actions.append(argmax_action)
-            #     self.compute_w_t(argmax_action)
+            # selected_ids = np.array(selected_ids)
+            # #print(selected_ids)
+            # input('press enter to continue')
             
-            # selected_actions = np.array(selected_actions)
             
-            XW_rho = empirical_reward + D_rho*np.sqrt(np.diag(np.matmul(np.matmul(given_actions, self.W_t), given_actions.T)))
-            
+            ''''''
+            '''original DPB'''
+            # XW_rho = empirical_reward + D_rho*np.sqrt(np.diag(np.matmul(np.matmul(given_actions, self.V_t), given_actions.T)))
+            # selected_ids = np.argsort(-XW_rho)[:b]
+            '''effective calculation DPB'''
+            XW_rho = empirical_reward + D_rho*Matrix_Norm(given_actions, self.V_t)
             selected_ids = np.argsort(-XW_rho)[:b]
+            
+            
+            
             selected_actions = given_actions[selected_ids]
             inputs_set = self.inputs_set[selected_ids]
+            
+            
+        print("computation time (seconds)!: " ,time.time()-start)
             
             
         if self.simulation_object.name == "avoid":
@@ -159,9 +213,9 @@ class DPB(PBL_model):
             # actions shape = (6, 2)
             return actions
         
-    def compute_w_t(self, A_t):
-        
-        self.W_t = np.matmul(A_t, A_t.T) + self.gamma*self.W_t + self.regularized_lambda*(1-self.gamma)*np.identity(self.d)
+    def compute_V_t(self, A_t):
+        A_t = A_t.reshape(self.d, -1)
+        self.V_t = np.matmul(A_t, A_t.T) + self.gamma*self.V_t + self.regularized_lambda*(1-self.gamma)*np.identity(self.d)
 
     def compute_tilde_w_t(self, A_t):
         
@@ -209,8 +263,8 @@ class DPB(PBL_model):
         
         cumulative_reward = 0
         
-        # initialize W_t
-        W_t = (self.regularized_lambda/c_mu)*np.identity(d)
+        # initialize V_t
+        V_t = (self.regularized_lambda/c_mu)*np.identity(d)
         
         # initialize \hat_theta
         hat_theta_D = np.zeros(2)
@@ -255,7 +309,7 @@ class DPB(PBL_model):
         def get_tilde_theta(theta):
             
             X = g_t_theta(hat_theta_D) - g_t_theta(theta)
-            return np.linalg.norm(np.matmul(np.matmul(X.T, W_t), X))
+            return np.linalg.norm(np.matmul(np.matmul(X.T, V_t), X))
         
         def ieq_const(theta):
             return S-np.linalg.norm(theta)
@@ -312,7 +366,7 @@ class DPB(PBL_model):
                 
                 # D_GLUCB select action
                 A_t = actions[np.argmax(mu(actions,tilde_theta_D) #)]
-                                       +D_rho*np.sqrt(np.diag(np.matmul(np.matmul(actions, self.W_t), actions.T))))]
+                                       +D_rho*np.sqrt(np.diag(np.matmul(np.matmul(actions, self.V_t), actions.T))))]
                 
                 
                 print(A_t)
@@ -363,7 +417,7 @@ class DPB(PBL_model):
                 g_parameter_archive.append(g_hat_theta_D)
                 
             A_t = A_t.reshape(-1, 1)
-            self.compute_w_t(A_t)
+            self.compute_V_t(A_t)
             
             
         parameter_archive = np.array(parameter_archive)
@@ -405,6 +459,5 @@ class DPB(PBL_model):
         return cumulative_reward
             
             
-
 
 

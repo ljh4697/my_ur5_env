@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 
 from run_algo.algo_utils import define_algo
 from run_algo.evaluation_metrics import cosine_metric, simple_regret, regret
+from run_optimizer import get_opt_id
 
 
  
@@ -22,18 +23,19 @@ if __name__ == "__main__":
     ap.add_argument('-b', "--num-batch", type=int, default=10,
                     help="# of batch")
     ap.add_argument('-s' ,'--seed',  type=int, default=1, help='A random seed')
-    ap.add_argument('-w' ,'--exploration-weight',  type=float, default=0.0002, help='DPB hyperparameter exploration weight')
-    ap.add_argument('-g' ,'--discounting-factor',  type=float, default=0.95, help='DPB hyperparameter discounting factor')
+    ap.add_argument('-w' ,'--exploration-weight',  type=float, default=0.0003, help='DPB hyperparameter exploration weight')
+    ap.add_argument('-g' ,'--discounting-factor',  type=float, default=0.955, help='DPB hyperparameter discounting factor')
     ap.add_argument('-d' ,'--delta',  type=float, default=0.7, help='DPB hyperparameter delta')
     ap.add_argument('-l' ,'--regularized-lambda',  type=float, default=0.1, help='DPB regularized lambda')
     ap.add_argument('-bm' ,'--BA-method',  type=str, default='greedy', help='method of batch active')
     
+        
 
-
-
+    
     args = vars(ap.parse_args())
 
     # random seed
+    # seed 3 for tosser video
     seed = args['seed']
     
     np.random.seed(seed)
@@ -78,6 +80,35 @@ if __name__ == "__main__":
             #hat_theta_t.append(algo.hat_theta_D)
             #true_theta_t.append(true_w[t_th_w])
             
+        # visualize opt traj
+        #20, 70, 120, 150, 170, 220, 270, 350]
+        
+        
+        # if int(t) in [20, 70, 120, 150, 170, 220, 270, 350]:
+        #     #algo.hat_theta_D)
+        #     print("round {}".format(str(t)))
+        #     opt_id = get_opt_id(algo.predefined_features, algo.hat_theta_D)
+        #     t_opt_id = get_opt_id(algo.predefined_features, true_w[t_th_w])
+            
+        #     print(np.dot(algo.predefined_features[opt_id], true_w[t_th_w]))
+        #     print(np.dot(algo.predefined_features[t_opt_id], true_w[t_th_w]))
+            
+                        
+        #     # total_num = algo.predefined_features.shape[0]
+        #     # half_t_num = total_num/2
+            
+            
+        #     # z = algo.simulation_object.feed_size
+            
+            
+        #     # if opt_id<half_t_num:
+        #     #     algo.simulation_object.feed(algo.inputs_set[opt_id,0:z])
+        #     # else:
+        #     #     opt_id = int(opt_id - half_t_num)
+        #     #     algo.simulation_object.feed(algo.inputs_set[opt_id,z:2*z])
+                
+        #     # algo.simulation_object.watch(1)
+                            
             
             
             
@@ -106,10 +137,29 @@ if __name__ == "__main__":
             algo.action_s.append(A)
             algo.reward_s.append(R)
             
-            if algos_type == "DPB":
-                algo.compute_w_t(A)
+            # if algos_type == "DPB":
+            #     algo.compute_V_t(A)
             
             t+=1
+            
+    # print("round {}".format(str(t)))
+    # opt_id = get_opt_id(algo.predefined_features, algo.hat_theta_D)
+                
+    # total_num = algo.predefined_features.shape[0]
+    # half_t_num = total_num/2
+    
+    
+    # z = algo.simulation_object.feed_size
+    
+    
+    # if opt_id<half_t_num:
+    #     algo.simulation_object.feed(algo.inputs_set[opt_id,0:z])
+    # else:
+    #     opt_id = int(opt_id - half_t_num)
+    #     algo.simulation_object.feed(algo.inputs_set[opt_id,z:2*z])
+        
+    # algo.simulation_object.watch(5)
+            
     
     
     
@@ -120,7 +170,7 @@ if __name__ == "__main__":
     
     # save result
     if algos_type == 'DPB':
-        filename = '../results/{}/{}/{}-iter{:d}-{:}-delta{:.2f}-alpha{:.4f}-gamma{:.3f}-lambda{:.2f}-seed{:d}.npy'.format(task, algos_type, task, N, algos_type, args["delta"], args["exploration_weight"], args["discounting_factor"], args['regularized_lambda'], seed)
+        filename = '../results/{}/{}/v_{}-iter{:d}-{:}-delta{:.2f}-alpha{:.4f}-gamma{:.3f}-lambda{:.2f}-seed{:d}.npy'.format(task, algos_type, task, N, algos_type, args["delta"], args["exploration_weight"], args["discounting_factor"], args['regularized_lambda'], seed)
     elif algos_type == "batch_active_PBL":
         filename = '../results/{}/{}/{}-iter{:d}-{:}-method_{}-seed{:d}.npy'.format(task, algos_type, task, N, algos_type, args["BA_method"], seed)
     

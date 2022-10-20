@@ -11,7 +11,7 @@ best_perform = str()
 consine_best_score = 0
 second_best_score = 0
 
-task = 'tosser'
+task = 'driver'
 
 save_path = f'{task}/DPB'
 
@@ -30,14 +30,16 @@ for f in os.listdir(save_path):
     
     if len(f.split('-')) >= 2:
         
-        if f.split('-')[2] == "DPB":
-            DPB_result = np.load(save_path + '/' + f)
-            if np.sum(DPB_result['eval_cosine'][9]) > consine_best_score:
-                consine_best_score = np.sum(DPB_result['eval_cosine'][9])
-                best_perform = f
-            elif consine_best_score > np.sum(DPB_result['eval_cosine'][9]) and np.sum(DPB_result['eval_cosine'][9]) > second_best_score:
-                second_best_score = np.sum(DPB_result['eval_cosine'][9])
-                secone_best_perform = f
+        if 'v' in f:
+        
+            if f.split('-')[2] == "DPB":
+                DPB_result = np.load(save_path + '/' + f)
+                if np.sum(DPB_result['eval_simple_regret']) > consine_best_score:
+                    consine_best_score = np.sum(DPB_result['eval_simple_regret'])
+                    best_perform = f
+                elif consine_best_score > np.sum(DPB_result['eval_simple_regret']) and np.sum(DPB_result['eval_simple_regret']) > second_best_score:
+                    second_best_score = np.sum(DPB_result['eval_simple_regret'])
+                    secone_best_perform = f
                 
                 
 print(best_perform)

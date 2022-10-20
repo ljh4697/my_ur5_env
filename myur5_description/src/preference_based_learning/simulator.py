@@ -137,7 +137,22 @@ class GymSimulation(Simulation):
                     break
         self.run() # so that the trajectory will be compatible with what user watches
         #self.sim.close() # this thing prevents any further viewing, pff.
-
+        
+        
+    def n_watch(self):
+        while True:
+            self.state = self.initial_state
+            for i in range(self.total_time):
+                temp = self.sim.step(np.array(self.ctrl_array[i]))
+                self.sim.render()
+                # time.sleep(self.frame_delay_ms/1000.0)
+                # self.done = temp[2]
+                # if self.done:
+                #     break`
+        self.run() # so that the trajectory will be compatible with what user watches
+        #self.sim.close() # this thing prevents any further viewing, pff.
+        
+        
     def close(self): # run only when you dont need the simulation anymore
         self.sim.close()
 

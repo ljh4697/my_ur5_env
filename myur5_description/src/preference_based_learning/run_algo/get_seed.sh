@@ -1,39 +1,38 @@
 #!/bin/sh
 
 
+python3 run_experiment.py -t tosser -d 0.7 -w 0.0006 -g 0.955 -l 0.1
+python3 run_experiment.py -t tosser -d 0.7 -w 0.0006 -g 0.953 -l 0.1
 
 
-for i in $(seq 1 10); do
-    python3 run_experiment.py -t tosser -d 0.7 -w 0.0008 -g 0.955 -l 0.2 -s $i
-done ####
 
-for i in $(seq 1 10); do
-    python3 run_experiment.py -t tosser -d 0.7 -w 0.0008 -g 0.954 -l 0.2 -s $i
-done ####
 
-for i in $(seq 1 10); do
-    python3 run_experiment.py -t tosser -d 0.7 -w 0.0009 -g 0.954 -l 0.21 -s $i
-done ####
 
-for i in $(seq 1 10); do
-    python3 run_experiment.py -t tosser -d 0.7 -w 0.0009 -g 0.954 -l 0.19 -s $i
-done ####
+# for i in $(seq 1 5); do
+#     python3 run_experiment.py -t tosser -d 0.7 -w 0.0009 -g 0.954 -l 0.1 -s $i
+# done ####
 
-for i in $(seq 1 10); do
-    python3 run_experiment.py -t tosser -d 0.7 -w 0.0008 -g 0.954 -l 0.22 -s $i
-done ####
+# python3 run_experiment.py -t driver -d 0.7 -w 0.0002 -g 0.95 -l 0.1 
+# python3 run_experiment.py -t driver -d 0.7 -w 0.0002 -g 0.948 -l 0.11
+# python3 run_experiment.py -t driver -d 0.7 -w 0.0002 -g 0.951 -l 0.1 
+# python3 run_experiment.py -t driver -d 0.7 -w 0.0002 -g 0.955 -l 0.11 
+# python3 run_experiment.py -t driver -d 0.7 -w 0.0002 -g 0.956 -l 0.1
+# python3 run_experiment.py -t driver -d 0.7 -w 0.0002 -g 0.947 -l 0.1 
 
-for i in $(seq 1 10); do
-    python3 run_experiment.py -t tosser -d 0.7 -w 0.0008 -g 0.954 -l 0.18 -s $i
-done ####
 
-for i in $(seq 1 10); do
-    python3 run_experiment.py -t tosser -d 0.7 -w 0.0009 -g 0.954 -l 0.22 -s $i
-done ####
+# for i in $(seq 3 5); do
+#     python3 run_experiment.py -t tosser -d 0.7 -w 0.0009 -g 0.954 -l 0.1 -s $i
+# done ####
 
-for i in $(seq 1 10); do
-    python3 run_experiment.py -t tosser -d 0.7 -w 0.0009 -g 0.954 -l 0.18 -s $i
-done ####
+# for i in $(seq 2 5); do
+#     python3 run_experiment.py -t tosser -d 0.7 -w 0.0008 -g 0.954 -l 0.11 -s $i
+# done ####
+
+
+
+
+
+
 
 # for i in $(seq 1 10); do
 #     python3 run_experiment.py -t avoid -d 0.7 -w 0.0005 -g 0.95 -l 0.44 -s $i
