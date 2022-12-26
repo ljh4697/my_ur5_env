@@ -191,7 +191,6 @@ class DPB(PBL_model):
             selected_ids = np.argsort(-XW_rho)[:b]
             
             
-            
             selected_actions = given_actions[selected_ids]
             inputs_set = self.inputs_set[selected_ids]
             

@@ -1,7 +1,9 @@
-N, M = 3, 4
-
-map = [[0] * M for _ in range(N)]
-
-print(map)
+import numpy as np
 
 
+
+
+
+a = [[1, 1], [2, 2], [3, 3]]
+b = a
+print(np.asarray(a))

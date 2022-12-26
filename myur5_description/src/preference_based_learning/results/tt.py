@@ -1,20 +1,9 @@
-from itertools import count
-from yaml import DirectiveToken
-
-# 
-
-
-
-
-
 
 N, M = map(int, input().split())
 x, y, direct = map(int, input().split())
 
 a_MAP = []
 visited_place = [[0] * M for i in range(N)]
-
-print(visited_place)
 
 for i in range(N):
     a_MAP.append(list(map(int, input().split())))
@@ -60,10 +49,3 @@ while True:
     
     
 print(result)
-    
-        
-        
-        
-
-
-    

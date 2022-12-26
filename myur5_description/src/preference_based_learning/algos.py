@@ -75,6 +75,14 @@ def greedy(simulation_object, w_samples, b):
     inputs_set, _, _, _, z = select_top_candidates(simulation_object, w_samples, b)
     return inputs_set[:, :z], inputs_set[:, z:]
 
+def point_greedy(w_samples, b, data_psi_set):
+    d = 3
+    inputs_set = data_psi_set
+    f_values = func_psi(data_psi_set, w_samples)
+    id_input = np.argsort(f_values)
+
+    return id_input[0:b]
+
 def medoids(simulation_object, w_samples, b, B=200):
     inputs_set, psi_set, _, _, z = select_top_candidates(simulation_object, w_samples, B)
 
