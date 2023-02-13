@@ -1,8 +1,8 @@
 #!/bin/sh
 
 
-python3 run_experiment.py -t tosser -d 0.7 -w 0.0006 -g 0.955 -l 0.1
-python3 run_experiment.py -t tosser -d 0.7 -w 0.0006 -g 0.953 -l 0.1
+# python3 run_experiment.py -t tosser -d 0.7 -w 0.0006 -g 0.955 -l 0.1
+# python3 run_experiment.py -t tosser -d 0.7 -w 0.0006 -g 0.953 -l 0.1
 
 
 
@@ -34,9 +34,19 @@ python3 run_experiment.py -t tosser -d 0.7 -w 0.0006 -g 0.953 -l 0.1
 
 
 
-# for i in $(seq 1 10); do
-#     python3 run_experiment.py -t avoid -d 0.7 -w 0.0005 -g 0.95 -l 0.44 -s $i
-# done
+for i in $(seq 1 10); do
+    python3 run_experiment.py -w 0.25 -g 0.935 -l 0.8 -s $i
+done
+
+
+for i in $(seq 1 10); do
+    python3 run_experiment.py -w 0.0004 -g 0.94 -l 0.8 -s $i
+done
+
+
+for i in $(seq 1 10); do
+    python3 run_experiment.py -w 0.002 -g 0.935 -l 0.8 -s $i
+done
 
 # for i in $(seq 1 10); do
 #     python3 run_experiment.py -t avoid -d 0.7 -w 0.0007 -g 0.95 -l 0.42 -s $i
@@ -61,5 +71,3 @@ python3 run_experiment.py -t tosser -d 0.7 -w 0.0006 -g 0.953 -l 0.1
 # for i in $(seq 1 10); do
 #     python3 run_experiment.py -t tosser -d 0.7 -w 0.006 -g 0.947 -l 0.10 -s $i
 # done
-
-7

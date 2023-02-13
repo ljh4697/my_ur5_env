@@ -1,6 +1,8 @@
 from simulation_utils import create_env, get_feedback
 from algorithms.batch_active_PBL import batch_active_PBL
 from algorithms.DPB import DPB
+from algorithms.DPB2 import DPB2
+
 
 import numpy as np
 import copy
@@ -57,7 +59,7 @@ def define_algo(task, algo_type, args, env_type):
     
     task = task.lower()
     
-    if algo_type not in ['DPB', 'batch_active_PBL']:
+    if algo_type not in ['DPB', 'batch_active_PBL', 'DPB2']:
         raise NotDefinedAlgo
     
     
@@ -65,9 +67,9 @@ def define_algo(task, algo_type, args, env_type):
     
     d = simulation_object.num_of_features
     
-    #true_w = timevarying_true_w(task, d)
+    true_w = timevarying_true_w(task, d)
     
-    true_w = video_driver_true_w()
+    #true_w = video_driver_true_w()
     
     if algo_type =="batch_active_PBL":
         batch_active_params["method"] = args["BA_method"]
@@ -85,6 +87,15 @@ def define_algo(task, algo_type, args, env_type):
         algo_params = DPB_params
         algo = DPB(simulation_object, algo_params, env_type)
         
+    elif algo_type =="DPB2":
+        DPB_params["exploration_weight"] = args["exploration_weight"]
+        DPB_params["delta"] = args["delta"]
+        DPB_params['discounting_factor'] = args["discounting_factor"]
+        DPB_params['regularized_lambda'] = args["regularized_lambda"]
+        
+        
+        algo_params = DPB_params
+        algo = DPB2(simulation_object, algo_params, env_type)
     
     
     return algo, true_w

@@ -12,8 +12,8 @@ second_perform = str()
 consine_best_score = 0
 second_best_score = 0
 third = 0
-task = 'tosser'
-
+task = 'driver'
+third_perform = 0
 save_path = f'{task}/DPB'
 
 
@@ -24,13 +24,15 @@ params_set = []
 
 for f in os.listdir(save_path):
     filepath = save_path + '/' + f
+    if 'ndriver' in filepath:
     
-    
-    params, seed = filepath.split('seed')
-    
-    params_set.append(params)
+        params, seed = filepath.split('seed')
+        
+        params_set.append(params)
     
 avgparams_set = []
+
+
 for f in params_set:
     
     if params_set.count(f) == 10:
@@ -46,8 +48,7 @@ mean_cosine = []
 
 
 for param in avgparams_set:
-    
-    
+
     for i in range(1, 11):
         
         DPB_result = np.load(param + 'seed' + str(i) + ".npy")
@@ -58,6 +59,8 @@ for param in avgparams_set:
         
     consine_score = np.mean(mean_cosine, axis=0)
     sum_cosine = np.sum(consine_score)
+    #sum_cosine = consine_score[9]
+    
     
     
     if sum_cosine > consine_best_score:
@@ -73,7 +76,6 @@ for param in avgparams_set:
         third_perform = param        
         
     mean_cosine = []
-
 
 print(best_perform)
 print(second_perform)

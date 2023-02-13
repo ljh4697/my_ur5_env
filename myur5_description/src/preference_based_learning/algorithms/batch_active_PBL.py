@@ -47,6 +47,7 @@ class batch_active_PBL(PBL_model):
         self.w_samples = self.w_sampler.sample(self.M)
 
         self.hat_theta_D = np.mean(self.w_samples,axis=0)
+        self.hat_theta_D = self.hat_theta_D/np.linalg.norm(self.hat_theta_D)
         
     def select_single_action(self, step):
         lower_input_bound = [x[0] for x in self.simulation_object.feed_bounds]

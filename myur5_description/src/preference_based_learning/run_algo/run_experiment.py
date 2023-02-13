@@ -1,4 +1,5 @@
-from isort import file
+#!/usr/bin/env python3
+
 import numpy as np
 from simulation_utils import get_feedback
 import argparse
@@ -15,7 +16,7 @@ if __name__ == "__main__":
     
     ap = argparse.ArgumentParser()
     ap.add_argument("-a", "--algo", type=str, default="DPB",
-                    choices=['DPB', 'batch_active_PBL'], help="type of algorithm")
+                    choices=['DPB', 'batch_active_PBL', 'DPB2'], help="type of algorithm")
     ap.add_argument('-e', "--num-iteration", type=int, default=400,
                     help="# of iteration")
     ap.add_argument('-t', "--task-env", type=str, default="driver",
@@ -23,8 +24,8 @@ if __name__ == "__main__":
     ap.add_argument('-b', "--num-batch", type=int, default=10,
                     help="# of batch")
     ap.add_argument('-s' ,'--seed',  type=int, default=1, help='A random seed')
-    ap.add_argument('-w' ,'--exploration-weight',  type=float, default=0.0003, help='DPB hyperparameter exploration weight')
-    ap.add_argument('-g' ,'--discounting-factor',  type=float, default=0.955, help='DPB hyperparameter discounting factor')
+    ap.add_argument('-w' ,'--exploration-weight',  type=float, default=0.0002, help='DPB hyperparameter exploration weight')
+    ap.add_argument('-g' ,'--discounting-factor',  type=float, default=0.952, help='DPB hyperparameter discounting factor')
     ap.add_argument('-d' ,'--delta',  type=float, default=0.7, help='DPB hyperparameter delta')
     ap.add_argument('-l' ,'--regularized-lambda',  type=float, default=0.1, help='DPB regularized lambda')
     ap.add_argument('-bm' ,'--BA-method',  type=str, default='greedy', help='method of batch active')
@@ -80,9 +81,10 @@ if __name__ == "__main__":
             #hat_theta_t.append(algo.hat_theta_D)
             #true_theta_t.append(true_w[t_th_w])
             
+            
+            
         # visualize opt traj
         #20, 70, 120, 150, 170, 220, 270, 350]
-        
         
         # if int(t) in [20, 70, 120, 150, 170, 220, 270, 350]:
         #     #algo.hat_theta_D)
@@ -137,10 +139,12 @@ if __name__ == "__main__":
             algo.action_s.append(A)
             algo.reward_s.append(R)
             
-            # if algos_type == "DPB":
-            #     algo.compute_V_t(A)
+            if algos_type == "DPB":
+                algo.compute_V_t(A)
             
             t+=1
+            
+
             
     # print("round {}".format(str(t)))
     # opt_id = get_opt_id(algo.predefined_features, algo.hat_theta_D)
@@ -168,9 +172,13 @@ if __name__ == "__main__":
     
     
     
+    
+    
     # save result
     if algos_type == 'DPB':
-        filename = '../results/{}/{}/v_{}-iter{:d}-{:}-delta{:.2f}-alpha{:.4f}-gamma{:.3f}-lambda{:.2f}-seed{:d}.npy'.format(task, algos_type, task, N, algos_type, args["delta"], args["exploration_weight"], args["discounting_factor"], args['regularized_lambda'], seed)
+        filename = '../results/{}/{}/n{}-iter{:d}-{:}-delta{:.2f}-alpha{:.4f}-gamma{:.3f}-lambda{:.2f}-seed{:d}.npy'.format(task, algos_type, task, N, algos_type, args["delta"], args["exploration_weight"], args["discounting_factor"], args['regularized_lambda'], seed)
+    elif algos_type == 'DPB2':
+        filename = '../results/{}/{}/{}-iter{:d}-{:}-delta{:.2f}-alpha{:.4f}-gamma{:.3f}-lambda{:.2f}-seed{:d}.npy'.format(task, algos_type, task, N, algos_type, args["delta"], args["exploration_weight"], args["discounting_factor"], args['regularized_lambda'], seed)
     elif algos_type == "batch_active_PBL":
         filename = '../results/{}/{}/{}-iter{:d}-{:}-method_{}-seed{:d}.npy'.format(task, algos_type, task, N, algos_type, args["BA_method"], seed)
     

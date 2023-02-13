@@ -122,7 +122,7 @@ class DPB(PBL_model):
             selected_actions = given_actions[np.random.randint(0, len(given_actions), 10)]
             
         else:
-            self.D_rho = self.D_rho_delta(step)*self.alpha
+            self.D_rho = self.get_alpha(step)*self.alpha
             
             ucb_scores = np.maximum(np.dot(given_actions, self.hat_theta_D ),-np.dot(given_actions, self.hat_theta_D )) + self.D_rho*np.sqrt(np.diag(np.matmul(np.matmul(given_actions, self.V_t), given_actions.T)))
             selected_actions = given_actions[np.argmax(ucb_scores)]
@@ -145,6 +145,8 @@ class DPB(PBL_model):
                 
             return result
         
+
+        
         given_actions = self.PSI
         z = self.simulation_object.feed_size
         
@@ -155,8 +157,8 @@ class DPB(PBL_model):
             inputs_set = self.inputs_set[random_initialize]
             selected_ids = random_initialize
             
-            for i in range(b):
-                self.compute_V_t(selected_actions[i])
+            # for i in range(b):
+            #     self.compute_V_t(selected_actions[i])
             
         else:
             selected_actions = []
@@ -164,7 +166,6 @@ class DPB(PBL_model):
             selected_ids = []
             #D_rho = self.D_rho_delta(step)*self.alpha   #existing method
             D_rho = self.get_alpha(step)*self.alpha
-            
             
             empirical_reward  =np.maximum(np.dot(given_actions, self.hat_theta_D ),-np.dot(given_actions, self.hat_theta_D )) 
             
@@ -180,14 +181,9 @@ class DPB(PBL_model):
             # selected_ids = np.array(selected_ids)
             # #print(selected_ids)
             # input('press enter to continue')
-            
-            
-            ''''''
-            '''original DPB'''
-            # XW_rho = empirical_reward + D_rho*np.sqrt(np.diag(np.matmul(np.matmul(given_actions, self.V_t), given_actions.T)))
-            # selected_ids = np.argsort(-XW_rho)[:b]
-            '''effective calculation DPB'''
-            XW_rho = empirical_reward + D_rho*Matrix_Norm(given_actions, self.V_t)
+
+            INV_V_t = np.linalg.inv(self.V_t)
+            XW_rho = empirical_reward + D_rho*Matrix_Norm(given_actions, INV_V_t)
             selected_ids = np.argsort(-XW_rho)[:b]
             
             
@@ -195,7 +191,6 @@ class DPB(PBL_model):
             inputs_set = self.inputs_set[selected_ids]
             
             
-        print("computation time (seconds)!: " ,time.time()-start)
             
             
         if self.simulation_object.name == "avoid":
@@ -241,6 +236,7 @@ class DPB(PBL_model):
                         iprint=0)
 
 
+        self.hat_theta_D = self.hat_theta_D/np.linalg.norm(self.hat_theta_D)
 
 
 

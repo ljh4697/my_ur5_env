@@ -46,7 +46,7 @@ class DPB_params_error(Exception):
     def __init__(self):
         super().__init__('it\'s not proper DPB params keys')
  
-class DPB(PBL_model):
+class DPB2(PBL_model):
     def __init__(self, simulation_object, DPB_params, env='simulated'):
         super().__init__(simulation_object, env)
         if list(DPB_params.keys()).sort() != ["regularized_lambda", "c_mu", "k_mu",
@@ -122,9 +122,9 @@ class DPB(PBL_model):
             selected_actions = given_actions[np.random.randint(0, len(given_actions), 10)]
             
         else:
-            self.D_rho = self.D_rho_delta(step)*self.alpha
-            
-            ucb_scores = np.maximum(np.dot(given_actions, self.hat_theta_D ),-np.dot(given_actions, self.hat_theta_D )) + self.D_rho*np.sqrt(np.diag(np.matmul(np.matmul(given_actions, self.V_t), given_actions.T)))
+            self.D_rho = self.get_alpha(step)*self.alpha
+            INV_V_t = np.linalg.inv(self.V_t)
+            ucb_scores = np.maximum(np.dot(given_actions, self.hat_theta_D ),-np.dot(given_actions, self.hat_theta_D )) + self.D_rho*np.sqrt(np.diag(np.matmul(np.matmul(given_actions, INV_V_t), given_actions.T)))
             selected_actions = given_actions[np.argmax(ucb_scores)]
         
         return selected_actions
@@ -142,6 +142,15 @@ class DPB(PBL_model):
             
             for i in range(A.shape[0]):
                 result[i] = np.sqrt(np.dot(AV[i,:],A[i,:]))
+                
+            return result
+        
+        
+        def Matrix_Norm_ew(A, V):
+            '''calculate ||A||_V'''
+            AV = np.matmul(A, V)
+            
+            result = np.sqrt(np.sum(AV*A, axis=1))
                 
             return result
         
@@ -165,21 +174,34 @@ class DPB(PBL_model):
             #D_rho = self.D_rho_delta(step)*self.alpha
             D_rho = self.get_alpha(step)*self.alpha
             
-            
             empirical_reward  =np.maximum(np.dot(given_actions, self.hat_theta_D ),-np.dot(given_actions, self.hat_theta_D )) 
             
-            ''''''
+            '''update V_t'''
             for i in range(b):
                 #XW_rho = empirical_reward + D_rho*np.sqrt(np.diag(np.matmul(np.matmul(given_actions, self.V_t), given_actions.T)))
-                XW_rho = empirical_reward + D_rho*Matrix_Norm(given_actions, self.V_t)
-                selected_ids.append(np.argmax(XW_rho))
+                
+                INV_V_t = np.linalg.inv(self.V_t)
+                XW_rho = empirical_reward + D_rho*Matrix_Norm_ew(given_actions, INV_V_t)
+                arg_XW_rho = np.argsort(-XW_rho)
+                arm_selector = False; a = 0
+                while not arm_selector:
+                    if arg_XW_rho[a] not in selected_ids:
+                        selected_ids.append(arg_XW_rho[a])
+                        arm_selector = True
+                    else:
+                        a += 1
+                        
+                    
                 self.compute_V_t(given_actions[np.argmax(XW_rho)])
                 #print(np.sort(empirical_reward))
-                print(np.sort(XW_rho))
+                #print(selected_ids)
+                #print(np.argsort(XW_rho))
+
                 
             selected_ids = np.array(selected_ids)
             #print(selected_ids)
-            input('press enter to continue')
+            #
+            # input('press enter to continue')
             
             
             ''''''
@@ -196,7 +218,7 @@ class DPB(PBL_model):
             inputs_set = self.inputs_set[selected_ids]
             
             
-        print("computation time (seconds)!: " ,time.time()-start)
+        #print("computation time (seconds)!: " ,time.time()-start)
             
             
         if self.simulation_object.name == "avoid":
@@ -241,7 +263,7 @@ class DPB(PBL_model):
                         ieqcons=[ieq_const],
                         iprint=0)
 
-
+        self.hat_theta_D = self.hat_theta_D/np.linalg.norm(self.hat_theta_D)
 
 
 

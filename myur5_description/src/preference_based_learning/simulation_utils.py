@@ -7,6 +7,7 @@ import rospy
 import moveit_commander
 import moveit_msgs.msg
 import os; import sys
+from algorithms.DPB import DPB
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(os.path.dirname(__file__)))))
 
 
@@ -170,7 +171,9 @@ def get_feedback(algo, input_A, input_B, psi, w, m ="oracle", human='simulated')
                 elif selection == 'q':
                     exit()
         
- 
+    if type(algo) == DPB and s == -1:
+        s = 0
+        
         
 
     return psi, s
