@@ -69,6 +69,43 @@ def select_top_candidates(simulation_object, w_samples, B):
     f_values = f_values[id_input[0:B]]
     return inputs_set, psi_set, f_values, d, z
 
+def optimize_discrete(simulation_object, w_samples, delta_samples, func, B):
+    d = simulation_object.num_of_features
+    z = simulation_object.feed_size
+
+    data = np.load('/home/joonhyeok/catkin_ws/src/my_ur5_env/myur5_description/src/preference_based_learning/ctrl_samples' +
+                   '/' + simulation_object.name + '.npz')
+    inputs_set = data['inputs_set']
+    psi_set = data['psi_set']
+    f_values = func(psi_set, w_samples, delta_samples)
+    
+    id_input = np.argsort(f_values)
+    inputs_set = inputs_set[id_input[0:B]]
+    
+    return inputs_set[:, :z], inputs_set[:, z:]
+
+
+def information_objective_psi(psi_set, w_samples, delta_samples):
+    delta_samples = delta_samples.reshape(-1,1)
+    M = w_samples.shape[0]
+    dR = w_samples.dot(psi_set.T)
+    p1 = 1/(1+np.exp(delta_samples - dR))
+    p2 = 1/(1+np.exp(delta_samples + dR))
+    p_Upsilon = (np.exp(2*delta_samples) - 1) * p1 * p2
+
+
+    if delta_samples.sum(axis=0) > 0: # hacky way to say if queries are weak preference queries -- the function had better take query_type as input
+        return -1.0/M * (np.sum(p1*np.log2(M*p1 / p1.sum(axis=0)), axis=0) + np.sum(p2*np.log2(M*p2 / p2.sum(axis=0)), axis=0) + np.sum(p_Upsilon*np.log2(M*p_Upsilon / p_Upsilon.sum(axis=0)), axis=0))
+    else:
+        return -1.0/M * (np.sum(p1*np.log2(M*p1 / p1.sum(axis=0)), axis=0) + np.sum(p2*np.log2(M*p2 / p2.sum(axis=0)), axis=0))
+
+
+
+def information(simulation_object, w_samples, delta_samples, b):
+    	#return optimize(simulation_object, w_samples, delta_samples, information_objective) # uncomment for continuous optimization (might take too long per query)
+	return optimize_discrete(simulation_object, w_samples, delta_samples, information_objective_psi, b)
+
+
 
 
 def greedy(simulation_object, w_samples, b):

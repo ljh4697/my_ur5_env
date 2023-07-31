@@ -198,7 +198,7 @@ def create_env(task):
         exit(0)
 
 
-def run_algo(method, simulation_object, w_samples, b=10, B=200):
+def run_algo(method, simulation_object, w_samples, b=10, B=200, delta_samples=None):
     if simulation_object.name == "avoid":
         if method == 'nonbatch':
             return a_algos.nonbatch(simulation_object, w_samples)
@@ -214,6 +214,8 @@ def run_algo(method, simulation_object, w_samples, b=10, B=200):
             return a_algos.random(simulation_object, w_samples, b)
         elif method == 'dpp':
             return a_algos.dpp(simulation_object, w_samples, b, B)
+        elif method == 'information':
+            return a_algos.information(simulation_object, w_samples, delta_samples, b)
         else:
             print('There is no method called ' + method)
             exit(0)
@@ -233,6 +235,8 @@ def run_algo(method, simulation_object, w_samples, b=10, B=200):
             return algos.random(simulation_object, w_samples, b)
         elif method == 'dpp':
             return algos.dpp(simulation_object, w_samples, b, B)
+        elif method == 'information':
+            return algos.information(simulation_object, w_samples, delta_samples, b)
         else:
             print('There is no method called ' + method)
             exit(0)

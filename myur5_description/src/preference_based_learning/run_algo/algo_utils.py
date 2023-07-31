@@ -178,8 +178,8 @@ def timevarying_true_w(task, features_d):
         true_w.append(change_w_element(true_w[0]))
         
         target_w = np.random.rand(features_d)
-        target_w[0] = np.random.uniform(-0.9,-0.99)
-        target_w[1] = np.random.uniform(-0.9,-0.99)
+        target_w[0] = np.random.uniform(0.9, 0.99)
+        target_w[1] = np.random.uniform(0.9, 0.99)
         target_w[2] = 0.3
         target_w[3] = 0.2
         target_w = target_w/np.linalg.norm(target_w)

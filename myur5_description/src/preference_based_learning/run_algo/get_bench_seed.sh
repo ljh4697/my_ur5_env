@@ -60,5 +60,23 @@ done
 
 python3 run_experiment.py -a batch_active_PBL -bm dpp -t avoid -s 10 
 
+
+### information
+for i in $(seq 1 4); do
+    python3 run_experiment.py -a batch_active_PBL -bm information -t avoid -s $i &
+done
+
+python3 run_experiment.py -a batch_active_PBL -bm information -t avoid -s 5 
+
+
+for i in $(seq 6 9); do
+    python3 run_experiment.py -a batch_active_PBL -bm information -t avoid -s $i &
+done
+
+python3 run_experiment.py -a batch_active_PBL -bm information -t avoid -s 10 
+
+
+
+
 ## DPB
 #sh DPB_grid_search.sh

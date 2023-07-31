@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 tosser_img = cv2.imread('/home/joonhyeok/catkin_ws/src/my_ur5_env/myur5_description/src/preference_based_learning/results/saved_graph/tosser/n_tosser_sample.png')
 driver_img = cv2.imread()
-avoidng_img = 
+#avoidng_img = 
 #img2 = cv2.imread('/home/joonhyeok/catkin_ws/src/my_ur5_env/myur5_description/src/preference_based_learning/results/saved_graph/tosser/tosser_sample.png')
 #img2 = cv2.imread('/home/joonhyeok/catkin_ws/src/my_ur5_env/myur5_description/src/preference_based_learning/results/saved_graph/tosser/mujoc.png')
 

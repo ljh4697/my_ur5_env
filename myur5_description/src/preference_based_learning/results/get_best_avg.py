@@ -12,9 +12,9 @@ second_perform = str()
 consine_best_score = 0
 second_best_score = 0
 third = 0
-task = 'driver'
+task = 'avoid'
 third_perform = 0
-save_path = f'{task}/DPB'
+save_path = f'{task}/DPB_greedy'
 
 
 
@@ -24,7 +24,7 @@ params_set = []
 
 for f in os.listdir(save_path):
     filepath = save_path + '/' + f
-    if 'ndriver' in filepath:
+    if 'avoid' in filepath:
     
         params, seed = filepath.split('seed')
         
@@ -58,8 +58,7 @@ for param in avgparams_set:
         #print(DPB_result['eval_cosine'])
         
     consine_score = np.mean(mean_cosine, axis=0)
-    sum_cosine = np.sum(consine_score)
-    #sum_cosine = consine_score[9]
+    sum_cosine = np.sum(consine_score[-1:])
     
     
     

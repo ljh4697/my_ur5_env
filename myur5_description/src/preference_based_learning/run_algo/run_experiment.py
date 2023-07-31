@@ -53,7 +53,7 @@ if __name__ == "__main__":
     
     
     algo, true_w = define_algo(task, algos_type, args, 'simulated')
-    
+    feature_set = np.load('/home/joonhyeok/catkin_ws/src/my_ur5_env/myur5_description/src/preference_based_learning/ctrl_samples/' + task + '_features'+'.npz', allow_pickle=True)['features']
     
     
     
@@ -135,12 +135,35 @@ if __name__ == "__main__":
             
             A, R = get_feedback(algo, inputA_set[i], inputB_set[i],
                                 actions[i], true_w[t_th_w], m="samling", human='simulated')
-                
-            algo.action_s.append(A)
-            algo.reward_s.append(R)
             
-            if algos_type == "DPB":
-                algo.compute_V_t(A)
+            if args['BA_method'] == 'information':
+                
+                if task == 'avoid':
+                    #R = -R
+                    idx = inputA_set[i]
+                
+                    phi_A = list(feature_set[idx*2])
+                    phi_B = list(feature_set[idx*2+1])
+                    # data = np.load('/home/joonhyeok/catkin_ws/src/my_ur5_env/myur5_description/src/preference_based_learning/ctrl_samples/' + algo.simulation_object.name + '.npz', allow_pickle=True)
+                    # PSI = data['psi_set']
+                    # print(phi_A-phi_B)
+                    # print(PSI[idx])
+                    # print(len(PSI))
+                                    
+                else:
+                    algo.simulation_object.feed(inputA_set[i])
+                    phi_A = algo.simulation_object.get_features()    
+                    
+                    algo.simulation_object.feed(inputB_set[i])
+                    phi_B = algo.simulation_object.get_features()
+                    
+                    
+                algo.feed(phi_A, phi_B, [-R])
+                algo.action_s.append(A)
+            else:
+                algo.action_s.append(A)
+                algo.reward_s.append(R)
+                
             
             t+=1
             
@@ -176,11 +199,11 @@ if __name__ == "__main__":
     
     # save result
     if algos_type == 'DPB':
-        filename = '../results/{}/{}/n{}-iter{:d}-{:}-delta{:.2f}-alpha{:.4f}-gamma{:.3f}-lambda{:.2f}-seed{:d}.npy'.format(task, algos_type, task, N, algos_type, args["delta"], args["exploration_weight"], args["discounting_factor"], args['regularized_lambda'], seed)
+        filename = '../results/{}/{}_greedy/{}-iter{:d}-{:}-delta{:.2f}-alpha{:.4f}-gamma{:.3f}-lambda{:.2f}-seed{:d}.npy'.format(task, algos_type, task, N, algos_type, args["delta"], args["exploration_weight"], args["discounting_factor"], args['regularized_lambda'], seed)
     elif algos_type == 'DPB2':
         filename = '../results/{}/{}/{}-iter{:d}-{:}-delta{:.2f}-alpha{:.4f}-gamma{:.3f}-lambda{:.2f}-seed{:d}.npy'.format(task, algos_type, task, N, algos_type, args["delta"], args["exploration_weight"], args["discounting_factor"], args['regularized_lambda'], seed)
     elif algos_type == "batch_active_PBL":
-        filename = '../results/{}/{}/{}-iter{:d}-{:}-method_{}-seed{:d}.npy'.format(task, algos_type, task, N, algos_type, args["BA_method"], seed)
+        filename = '../results/{}/{}/n{}-iter{:d}-{:}-method_{}-seed{:d}.npy'.format(task, algos_type, task, N, algos_type, args["BA_method"], seed)
     
     
     with open(filename, 'wb') as f:

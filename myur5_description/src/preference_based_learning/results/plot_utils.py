@@ -43,7 +43,7 @@ def plot_cosine_metric(DPB_cosine_evaluation, DPB_cosine_evaluation_std,
     
     
     plt.plot(b*np.arange(len(DPB_cosine_evaluation)), DPB_cosine_evaluation, color='indigo', label='DPB', alpha=1, markevery=0.1, marker='o', markersize=8.5, linewidth=2)
-    plt.plot(b*np.arange(len(DPB2_cosine_evaluation)), DPB2_cosine_evaluation, color='darkorange', label='DPB (adaptive)', alpha=1, markevery=0.1, marker='p', markersize=8.5, linewidth=2)
+    plt.plot(b*np.arange(len(DPB2_cosine_evaluation)), DPB2_cosine_evaluation, color='darkorange', label='information', alpha=1, markevery=0.1, marker='*', markersize=8.5, linewidth=2)
     
     plt.plot(b*np.arange(len(BA_greedy_cosine_evaluation)), BA_greedy_cosine_evaluation, color='red', label='greedy', alpha=0.4, markevery=0.1, marker='>', markersize=8.5, linewidth=2)
     plt.plot(b*np.arange(len(BA_medoids_cosine_evaluation)), BA_medoids_cosine_evaluation, color='red', label='medoids', alpha=0.7, markevery=0.1, marker='s', markersize=8.5, linewidth=2)
@@ -98,13 +98,14 @@ def plot_cosine_metric(DPB_cosine_evaluation, DPB_cosine_evaluation_std,
 
 def plot_simple_regret(opt_simple_reward, opt_simple_reward_std,
                        DPB_simple_regret_evaluation, DPB_simple_regret_evaluation_std,
+                       DPB2_simple_regret_evaluation, DPB2_simple_regret_evaluation_std,
                        BA_greedy_simple_regret_evaluation, BA_greedy_simple_regret_evaluation_std,
                        BA_medoids_simple_regret_evaluation, BA_medoids_simple_regret_evaluation_std,
                        BA_dpp_simple_regret_evaluation, BA_dpp_simple_regret_evaluation_std,
                        random_simple_regret_evaluation, random_simple_regret_evaluation_std, b=10, task='driver'
                        ):
     plt.plot(b*np.arange(len(DPB_simple_regret_evaluation)), DPB_simple_regret_evaluation, color='indigo', label='DPB', alpha=1, marker='o', markevery=0.1, markersize=8.5, linewidth=2)
-    #plt.plot(b*np.arange(len(opt_simple_reward)), opt_simple_reward, color='blue', linestyle='dashed',label='true', alpha=0.8, linewidth=2)
+    plt.plot(b*np.arange(len(DPB2_simple_regret_evaluation)), DPB2_simple_regret_evaluation, color='darkorange', label='information', alpha=1, markevery=0.1, marker='*', markersize=8.5, linewidth=2)
     plt.plot(b*np.arange(len(BA_greedy_simple_regret_evaluation)), BA_greedy_simple_regret_evaluation, color='red', label='greedy', alpha=0.4, marker='>', markevery=0.1, markersize=8.5, linewidth=2)
     plt.plot(b*np.arange(len(BA_medoids_simple_regret_evaluation)), BA_medoids_simple_regret_evaluation, color='red', label='medoids', alpha=0.7, marker='s', markevery=0.1, markersize=8.5, linewidth=2)
     plt.plot(b*np.arange(len(BA_dpp_simple_regret_evaluation)), BA_dpp_simple_regret_evaluation, color='red', label='dpp', alpha=1, marker='x', markevery=0.1, markersize=8.5, linewidth=2)
@@ -114,7 +115,12 @@ def plot_simple_regret(opt_simple_reward, opt_simple_reward_std,
                             DPB_simple_regret_evaluation-DPB_simple_regret_evaluation_std,
                             DPB_simple_regret_evaluation+DPB_simple_regret_evaluation_std,
                             alpha=0.1, color='indigo')
-
+    
+    plt.fill_between(b*np.arange(len(DPB2_simple_regret_evaluation)),
+                            DPB2_simple_regret_evaluation-DPB2_simple_regret_evaluation_std,
+                            DPB2_simple_regret_evaluation+DPB2_simple_regret_evaluation_std,
+                            alpha=0.1, color='darkorange')
+    
     plt.fill_between(b*np.arange(len(BA_greedy_simple_regret_evaluation)),
                             BA_greedy_simple_regret_evaluation-BA_greedy_simple_regret_evaluation_std,
                             BA_greedy_simple_regret_evaluation+BA_greedy_simple_regret_evaluation_std,
@@ -152,12 +158,14 @@ def plot_simple_regret(opt_simple_reward, opt_simple_reward_std,
 
 
 def plot_cumulative_regret(DPB_cumulative_regret_evaluation, DPB_cumulative_regret_evaluation_std,
+                           DPB2_cumulative_regret_evaluation, DPB2_cumulative_regret_evaluation_std,
                            BA_greedy_cumulative_regret_evaluation, BA_greedy_cumulative_regret_evaluation_std,
                            BA_medoids_cumulative_regret_evaluation, BA_medoids_cumulative_regret_evaluation_std,
                            BA_dpp_cumulative_regret_evaluation, BA_dpp_cumulative_regret_evaluation_std,
                            random_cumulative_regret_evaluation, random_cumulative_regret_evaluation_std, b=10, task='driver'):
         
     plt.plot(b*np.arange(len(DPB_cumulative_regret_evaluation)), DPB_cumulative_regret_evaluation, color='indigo', label='DPB', alpha=1, markevery=0.1, marker='o', markersize=8.5, linewidth=2)
+    plt.plot(b*np.arange(len(DPB2_cumulative_regret_evaluation)), DPB2_cumulative_regret_evaluation, color='darkorange', label='information', alpha=1, markevery=0.1, marker='*', markersize=8.5, linewidth=2)
     plt.plot(b*np.arange(len(BA_greedy_cumulative_regret_evaluation)), BA_greedy_cumulative_regret_evaluation, color='red', label='greedy', alpha=0.4, markevery=0.1, marker='>', markersize=8.5, linewidth=2)
     plt.plot(b*np.arange(len(BA_medoids_cumulative_regret_evaluation)), BA_medoids_cumulative_regret_evaluation, color='red', label='medoids', alpha=0.6, markevery=0.1, marker='s', markersize=8.5, linewidth=2)
     plt.plot(b*np.arange(len(BA_dpp_cumulative_regret_evaluation)), BA_dpp_cumulative_regret_evaluation, color='red', label='dpp', alpha=1, markevery=0.1, marker='x', markersize=8.5, linewidth=2)
@@ -168,6 +176,12 @@ def plot_cumulative_regret(DPB_cumulative_regret_evaluation, DPB_cumulative_regr
                             DPB_cumulative_regret_evaluation-DPB_cumulative_regret_evaluation_std,
                             DPB_cumulative_regret_evaluation+DPB_cumulative_regret_evaluation_std,
                             alpha=0.1, color='indigo')
+    
+    
+    plt.fill_between(b*np.arange(len(DPB2_cumulative_regret_evaluation)),
+                            DPB2_cumulative_regret_evaluation-DPB2_cumulative_regret_evaluation_std,
+                            DPB2_cumulative_regret_evaluation+DPB2_cumulative_regret_evaluation_std,
+                            alpha=0.1, color='darkorange')
 
     plt.fill_between(b*np.arange(len(BA_greedy_cumulative_regret_evaluation)),
                             BA_greedy_cumulative_regret_evaluation-BA_greedy_cumulative_regret_evaluation_std,

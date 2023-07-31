@@ -33,41 +33,21 @@
 
 
 
+# for i in $(seq 1 10); do
+#     python3 run_experiment.py -a DPB -d 0.7 -w 0.0019 -g 0.934 -l 0.6 -s $i -t avoid &
+# done
 
-for i in $(seq 1 10); do
-    python3 run_experiment.py -w 0.25 -g 0.935 -l 0.8 -s $i
-done
-
-
-for i in $(seq 1 10); do
-    python3 run_experiment.py -w 0.0004 -g 0.94 -l 0.8 -s $i
-done
+# for i in $(seq 1 10); do
+#     python3 run_experiment.py -a batch_active_PBL -bm information -t driver -s $i
+# done
 
 
 for i in $(seq 1 10); do
-    python3 run_experiment.py -w 0.002 -g 0.935 -l 0.8 -s $i
+    python3 run_experiment.py -a batch_active_PBL -bm information -t avoid -s $i
 done
 
-# for i in $(seq 1 10); do
-#     python3 run_experiment.py -t avoid -d 0.7 -w 0.0007 -g 0.95 -l 0.42 -s $i
-# done
 
 # for i in $(seq 1 10); do
-#     python3 run_experiment.py -t avoid -d 0.7 -w 0.0005 -g 0.952 -l 0.44 -s $i
+#     python3 run_experiment.py -t avoid -w 0.0019 -g 0.934 -d 0.7 -l 0.6 -s $i -a DPB
 # done
 
-
-# for i in $(seq 1 10); do
-#     python3 run_experiment.py -t avoid -d 0.7 -w 0.0005 -g 0.955 -l 0.44 -s $i
-# done
-
-# for i in $(seq 1 10); do
-#     python3 run_experiment.py -t avoid -d 0.6 -w 0.0002 -g 0.95 -l 0.42 -s $i
-# done
-
-# for i in $(seq 1 10); do
-#     python3 run_experiment.py -t avoid -d 0.6 -w 0.0002 -g 0.951 -l 0.42 -s $i
-# done
-# for i in $(seq 1 10); do
-#     python3 run_experiment.py -t tosser -d 0.7 -w 0.006 -g 0.947 -l 0.10 -s $i
-# done

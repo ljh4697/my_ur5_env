@@ -1,5 +1,6 @@
 from algorithms.PBL_algorithm import PBL_model
 from sampling import Sampler
+from sampling_info import Info_Sampler
 import numpy as np
 from simulation_utils import run_algo
 
@@ -29,12 +30,21 @@ class batch_active_PBL(PBL_model):
         '''################################################################'''
         
 
+        if self.method =='information':
+            self.w_sampler = Info_Sampler(self.simulation_object.num_of_features)
+            self.w_samples, self.delta_samples = self.w_sampler.sample_given_delta(self.M, 'strict', 0)
+        else:
+            self.w_sampler = Sampler(self.simulation_object.num_of_features)
+            self.w_samples = self.w_sampler.sample(self.M)
+            
         
-        self.w_sampler = Sampler(self.simulation_object.num_of_features)
-        self.w_samples = self.w_sampler.sample(self.M)
+        
+        
         self.hat_theta_D = np.mean(self.w_samples,axis=0)
         
-
+        
+    def feed(self, pha_A, phi_B, a):
+        self.w_sampler.feed(pha_A, phi_B, a)
         
         
         
@@ -42,12 +52,19 @@ class batch_active_PBL(PBL_model):
         if t == 0:
             return
         
-        self.w_sampler.A = self.action_s
-        self.w_sampler.y = np.array(self.reward_s).reshape(-1,1)
-        self.w_samples = self.w_sampler.sample(self.M)
+        if self.method == 'information':
+            self.w_samples, self.delta_samples = self.w_sampler.sample_given_delta(self.M, 'strict', 0)
+            
+            self.hat_theta_D = np.mean(self.w_samples,axis=0)
+            self.hat_theta_D = self.hat_theta_D/np.linalg.norm(self.hat_theta_D)
+        
+        else:
+            self.w_sampler.A = self.action_s
+            self.w_sampler.y = np.array(self.reward_s).reshape(-1,1)
+            self.w_samples = self.w_sampler.sample(self.M)
 
-        self.hat_theta_D = np.mean(self.w_samples,axis=0)
-        self.hat_theta_D = self.hat_theta_D/np.linalg.norm(self.hat_theta_D)
+            self.hat_theta_D = np.mean(self.w_samples,axis=0)
+            self.hat_theta_D = self.hat_theta_D/np.linalg.norm(self.hat_theta_D)
         
     def select_single_action(self, step):
         lower_input_bound = [x[0] for x in self.simulation_object.feed_bounds]
@@ -84,9 +101,8 @@ class batch_active_PBL(PBL_model):
     def select_batch_actions(self, step, b):
 
             
-            
-            
         
+            
         def avoid_env():
             given_actions = self.PSI
             
@@ -98,8 +114,10 @@ class batch_active_PBL(PBL_model):
                 
                 
             else:
-                
-                psi_set_id = run_algo(self.method, self.simulation_object, self.w_samples, b, self.B)
+                if self.method == 'information':
+                    psi_set_id = run_algo(self.method, self.simulation_object, self.w_samples, b, self.B, self.delta_samples)
+                else:
+                    psi_set_id = run_algo(self.method, self.simulation_object, self.w_samples, b, self.B)
                 
                 selected_actions = given_actions[psi_set_id]
                 
@@ -118,6 +136,7 @@ class batch_active_PBL(PBL_model):
                 inputs_set = self.inputs_set[random_initialize]
 
                 inputA_set, inputB_set = inputs_set[:, :z], inputs_set[:, z:]
+                
                 # inputA_set = np.random.uniform(low=2*lower_input_bound, high=2*upper_input_bound, size=(b, 2*self.simulation_object.feed_size))
                 # inputB_set = np.random.uniform(low=2*lower_input_bound, high=2*upper_input_bound, size=(b, 2*self.simulation_object.feed_size))
 
@@ -132,8 +151,12 @@ class batch_active_PBL(PBL_model):
                 #     phi_B = self.simulation_object.get_features()
                     
                 #     selected_actions[i, :] = np.array(phi_A) - np.array(phi_B)
+                
             else:
-                inputA_set, inputB_set = run_algo(self.method, self.simulation_object, self.w_samples, b, self.B)
+                if self.method == 'information':
+                    inputA_set, inputB_set = run_algo(self.method, self.simulation_object, self.w_samples, b, self.B, self.delta_samples)
+                else:
+                    inputA_set, inputB_set = run_algo(self.method, self.simulation_object, self.w_samples, b, self.B)
                 
                 selected_actions = np.zeros((b, self.d))
                 
@@ -154,6 +177,7 @@ class batch_active_PBL(PBL_model):
                 
         if self.simulation_object.name == "avoid":
             selected_actions, inputA_set, inputB_set = avoid_env()
+            
         else:
             selected_actions, inputA_set, inputB_set = benchmark_env()
         
